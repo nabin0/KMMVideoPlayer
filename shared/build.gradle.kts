@@ -33,12 +33,18 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        androidMain.dependencies {
+            implementation (libs.androidx.media3.exoplayer)
+            implementation (libs.androidx.media3.ui)
+            implementation (libs.androidx.media3.common)
         }
     }
 }
