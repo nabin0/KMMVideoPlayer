@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
 
 expect class VideoPlayerController {
+
     val mediaDuration: MutableStateFlow<Long>
     val isPlaying: MutableStateFlow<Boolean>
 
@@ -12,7 +13,14 @@ expect class VideoPlayerController {
     fun buildPlayer(onPlayerCreated: (player: Any) -> Unit)
 
     @Composable
-    fun PlayerView(modifier: Modifier = Modifier)
+    fun PlayerView(useDefaultController: Boolean = true , modifier: Modifier = Modifier)
+
+    @Composable
+    fun enablePortraitScreenMode()
+
+    @Composable
+    fun enableLandscapeScreenMode()
+
     fun setMediaItem(
         videoLink: String,
         mediaTag: String?,
@@ -20,11 +28,11 @@ expect class VideoPlayerController {
         mediaId: String?,
         subtitleLink: String?,
     )
-
     fun prepare()
     fun play()
     fun pause()
     fun seekTo(millis: Long)
     fun currentPosition(): Long
+
     fun playWhenReady(boolean: Boolean)
 }

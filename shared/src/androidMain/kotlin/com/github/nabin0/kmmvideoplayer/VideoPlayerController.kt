@@ -1,5 +1,7 @@
 package com.github.nabin0.kmmvideoplayer
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,7 +21,8 @@ actual class VideoPlayerController {
     private var exoPlayer: ExoPlayer? = null
 
     actual val mediaDuration: MutableStateFlow<Long> = MutableStateFlow(0L)
-    actual val isPlaying: MutableStateFlow<Boolean> = MutableStateFlow(exoPlayer?.isPlaying ?: false)
+    actual val isPlaying: MutableStateFlow<Boolean> =
+        MutableStateFlow(exoPlayer?.isPlaying ?: false)
 
     @Composable
     actual fun buildPlayer(onPlayerCreated: (player: Any) -> Unit) {
@@ -32,25 +35,15 @@ actual class VideoPlayerController {
                         events: Player.Events,
                     ) {
                         super.onEvents(player, events)
-
-                        // hide title only when player duration is at least 200ms
-//                        if (player.currentPosition >= 200) {
-//                            visibleState = false
-//                        }
                     }
 
                     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                         super.onMediaItemTransition(mediaItem, reason)
-
-                        // everytime the media item changes, show the title
-//                        visibleState = true
-//                        videoTitle = mediaItem?.mediaMetadata?.displayTitle.toString()
-
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         super.onPlaybackStateChanged(playbackState)
-                        if (playbackState == ExoPlayer.STATE_READY && mediaDuration.value == null) {
+                        if (playbackState == ExoPlayer.STATE_READY && (mediaDuration.value.toInt() == 0)) {
                             mediaDuration.value = contentDuration
                         }
                     }
@@ -145,12 +138,12 @@ actual class VideoPlayerController {
     }
 
     @Composable
-    actual fun PlayerView(modifier: Modifier) {
+    actual fun PlayerView(useDefaultController: Boolean, modifier: Modifier) {
         AndroidView(modifier = modifier, factory = {
             androidx.media3.ui.PlayerView(it)
         }) {
             it.player = exoPlayer
-            it.useController = false
+            it.useController = useDefaultController
         }
     }
 
@@ -162,5 +155,18 @@ actual class VideoPlayerController {
 
     actual fun currentPosition(): Long = exoPlayer?.currentPosition ?: 0L
 
+
+    @Composable
+    actual fun enableLandscapeScreenMode() {
+        val activity = LocalContext.current as Activity
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    }
+
+    @Composable
+    actual fun enablePortraitScreenMode() {
+        val activity = LocalContext.current as Activity
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+    }
 
 }

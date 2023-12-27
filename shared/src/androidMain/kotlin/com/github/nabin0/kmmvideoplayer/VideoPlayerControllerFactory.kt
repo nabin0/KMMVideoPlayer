@@ -10,8 +10,9 @@ actual class VideoPlayerControllerFactory {
     @Composable
     actual fun createVideoPlayer(): VideoPlayerController {
         val activity = LocalContext.current as ComponentActivity
-        return remember(activity) {
+        return remember(Unit) {
             VideoPlayerController()
         }
     }
 }
+

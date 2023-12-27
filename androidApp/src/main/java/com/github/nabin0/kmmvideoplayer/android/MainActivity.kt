@@ -25,10 +25,21 @@ class MainActivity : ComponentActivity() {
                         videoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
                         videoPlayerController = VideoPlayerControllerFactory().createVideoPlayer()
                     )
+
                 }
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+}
+
+
+object VideoPlayerProvider{
+    @Composable
+    fun getPlayer()= VideoPlayer()
 }
 
 @Composable
