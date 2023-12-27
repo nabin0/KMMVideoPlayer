@@ -4,12 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.nabin0.kmmvideoplayer.VideoPlayerControllerFactory
 
 class MainActivity : ComponentActivity() {
@@ -17,14 +23,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyApplicationTheme {
+                val videoPlayer = VideoPlayerControllerFactory().createVideoPlayer()
                 Column(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     com.github.nabin0.kmmvideoplayer.VideoPlayer(
                         modifier = Modifier.fillMaxWidth(),
                         videoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                        videoPlayerController = VideoPlayerControllerFactory().createVideoPlayer()
+                        videoPlayerController = videoPlayer
                     )
+                    Text(text = "VideoPlayer View", fontSize = 25.sp, textAlign = TextAlign.Center, color = Color.White)
 
                 }
             }
@@ -37,20 +45,8 @@ class MainActivity : ComponentActivity() {
 }
 
 
-object VideoPlayerProvider{
+object VideoPlayerProvider {
     @Composable
-    fun getPlayer()= VideoPlayer()
+    fun getPlayer() = VideoPlayer()
 }
 
-@Composable
-fun GreetingView(text: String) {
-    Text(text = text)
-}
-
-@Preview
-@Composable
-fun DefaultPreview() {
-    MyApplicationTheme {
-        GreetingView("Hello, Android!")
-    }
-}

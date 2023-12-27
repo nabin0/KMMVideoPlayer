@@ -1,6 +1,7 @@
-@OptIn(UnstableApi::class) package com.github.nabin0.kmmvideoplayer.android
+package com.github.nabin0.kmmvideoplayer.android
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.annotation.OptIn
@@ -66,12 +67,24 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.HttpDataSource
+import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.NoOpCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.datasource.cronet.CronetDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.trackselection.MappingTrackSelector
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
+import org.chromium.net.CronetEngine
+import java.io.File
+import java.util.concurrent.Executors
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -82,7 +95,8 @@ fun VideoPlayer(
     val mediaItemBuilder = MediaItem.Builder()
 
 
-    val type = Util.inferContentType(Uri.parse("videoLink"))
+    val type =
+        Util.inferContentType(Uri.parse("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"))
     when (type) {
         C.CONTENT_TYPE_SS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_SS)
         C.CONTENT_TYPE_DASH -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
@@ -91,8 +105,8 @@ fun VideoPlayer(
         else -> {}
     }
 
-    val mediaItem = mediaItemBuilder
-        .setUri("videoLink")
+    val mediaItem1 = mediaItemBuilder
+        .setUri("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8")
         .setMediaId("never-gonna-give-you-up")
         .setTag("never-gonna-give-you-up")
         .setMediaMetadata(
@@ -113,15 +127,40 @@ fun VideoPlayer(
 //        )
         .build()
 
+    val mediaItem = MediaItem.Builder()
+        .setUri("https://storage.googleapis.com/wvmedia/cenc/h264/tears/tears.mpd")
+        .setMimeType(MimeTypes.APPLICATION_MPD)
+        .setDrmConfiguration(
+            MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
+                .setLicenseUri("https://proxy.uat.widevine.com/proxy?video_id=2015_tears&provider=widevine_test")
+                .build()
+        )
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle("Clear(WebM, VP9)")
+                .setDescription(
+                    "Tears of Steel is a short film by producer Ton Roosendaal and director Ian Hubert. " +
+                            "It was made using new enhancements to the visual effects capabilities of Blender, a free and open source software application for animation. " +
+                            "The film was funded by the Blender Foundation, donations from the Blender community, pre-sales of the film's DVD and commercial sponsorship."
+                )
+                .setArtworkUri(Uri.parse("https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
+                .build()
+        )
+        .build()
+
     var videoTitle by remember { mutableStateOf(mediaItem.mediaMetadata.displayTitle) }
     var visibleState by remember { mutableStateOf(true) }
     var videoDuration by remember { mutableStateOf<Long?>(null) }
     var currentPosition by remember { mutableStateOf<Long?>(null) }
 
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
+        ExoPlayer.Builder(context).setMediaSourceFactory(
+            DefaultMediaSourceFactory(getReadOnlyDataSourceFactory(context))
+        ).build().apply {
             this.setMediaItem(mediaItem)
+
             this.prepare()
+
             this.playWhenReady = true
 
 
@@ -185,7 +224,7 @@ fun VideoPlayer(
                 for (i in 0 until mappedTrackInfo.length) {
                     val trackGroups = mappedTrackInfo.get(i)
                     val format = trackGroups.getFormat(i)
-                    if (format.language != null){
+                    if (format.language != null) {
                         Log.d("TAG", "VideoPlayer: ${format.language}")
                     }
 
@@ -204,54 +243,57 @@ fun VideoPlayer(
         }
 
 
-        Button(onClick = { trackSelector?.let {
-            var availableStreamingQualitiesHLS: MutableList<HLSStreamingQuality>? =  ArrayList()
-            val renderTrack = it.currentMappedTrackInfo
-            val renderCount = renderTrack?.rendererCount ?: 0
-            for (rendererIndex in 0 until renderCount) {
-                if (isSupportedFormat(renderTrack, rendererIndex)) {
-                    val trackGroupType = renderTrack?.getRendererType(rendererIndex)
-                    val trackGroups = renderTrack?.getTrackGroups(rendererIndex)
-                    val trackGroupsCount = trackGroups?.length!!
-                    if (trackGroupType == C.TRACK_TYPE_VIDEO) {
-                        for (groupIndex in 0 until trackGroupsCount) {
-                            val videoQualityTrackCount = trackGroups[groupIndex].length
-                            for (trackIndex in 0 until videoQualityTrackCount) {
-                                val isTrackSupported = renderTrack.getTrackSupport(
-                                    rendererIndex,
-                                    groupIndex,
-                                    trackIndex
-                                ) == C.FORMAT_HANDLED
-                                if (isTrackSupported) {
-                                    val track = trackGroups[groupIndex]
-                                    val trackName =
-                                        "${track.getFormat(trackIndex).height} p"
-                                    val resolutionKey = track.getFormat(trackIndex).height
-                                    /*if (track.getFormat(trackIndex).selectionFlags == C.SELECTION_FLAG_AUTOSELECT) {
-                                        trackName.plus(" (Default)")
-                                    }*/
-                                    availableStreamingQualitiesHLS?.add(
-                                        HLSStreamingQuality(
-                                            trackIndex, trackName, resolutionKey = resolutionKey
+        Button(onClick = {
+            trackSelector?.let {
+                var availableStreamingQualitiesHLS: MutableList<HLSStreamingQuality>? = ArrayList()
+                val renderTrack = it.currentMappedTrackInfo
+                val renderCount = renderTrack?.rendererCount ?: 0
+                for (rendererIndex in 0 until renderCount) {
+                    if (isSupportedFormat(renderTrack, rendererIndex)) {
+                        val trackGroupType = renderTrack?.getRendererType(rendererIndex)
+                        val trackGroups = renderTrack?.getTrackGroups(rendererIndex)
+                        val trackGroupsCount = trackGroups?.length!!
+                        if (trackGroupType == C.TRACK_TYPE_VIDEO) {
+                            for (groupIndex in 0 until trackGroupsCount) {
+                                val videoQualityTrackCount = trackGroups[groupIndex].length
+                                for (trackIndex in 0 until videoQualityTrackCount) {
+                                    val isTrackSupported = renderTrack.getTrackSupport(
+                                        rendererIndex,
+                                        groupIndex,
+                                        trackIndex
+                                    ) == C.FORMAT_HANDLED
+                                    if (isTrackSupported) {
+                                        val track = trackGroups[groupIndex]
+                                        val trackName =
+                                            "${track.getFormat(trackIndex).height} p"
+                                        val resolutionKey = track.getFormat(trackIndex).height
+                                        /*if (track.getFormat(trackIndex).selectionFlags == C.SELECTION_FLAG_AUTOSELECT) {
+                                            trackName.plus(" (Default)")
+                                        }*/
+                                        availableStreamingQualitiesHLS?.add(
+                                            HLSStreamingQuality(
+                                                trackIndex, trackName, resolutionKey = resolutionKey
+                                            )
                                         )
-                                    )
 
 
-                                    availableStreamingQualitiesHLS?.distinctBy { it.resolutionKey }
-                                        ?.sortedByDescending { it.resolutionKey }?.toMutableList()
-                                        ?.takeIf { it.isNotEmpty() }?.also {
-                                            it.add(0, HLSStreamingQuality(0, "Auto", 0))
-                                        }
-                                    Log.d("TAG", "VideoPlayer: $availableStreamingQualitiesHLS")
+                                        availableStreamingQualitiesHLS?.distinctBy { it.resolutionKey }
+                                            ?.sortedByDescending { it.resolutionKey }
+                                            ?.toMutableList()
+                                            ?.takeIf { it.isNotEmpty() }?.also {
+                                                it.add(0, HLSStreamingQuality(0, "Auto", 0))
+                                            }
+                                        Log.d("TAG", "VideoPlayer: $availableStreamingQualitiesHLS")
 
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-        } }) {
+            }
+        }) {
             Text(text = "Resoulution")
         }
 //        ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
@@ -277,9 +319,9 @@ fun VideoPlayer(
 //                )
 //            }
 //
-            DisposableEffect(Unit) {
-                onDispose { exoPlayer.release() }
-            }
+        DisposableEffect(Unit) {
+            onDispose { exoPlayer.release() }
+        }
 //
 //            // Player view
 //            AndroidView(
@@ -357,7 +399,6 @@ fun VideoPlayerOverlay(
         )
     }
 }
-
 
 
 fun isSupportedFormat(
@@ -759,4 +800,36 @@ class ReadableTime(val seconds: Long, val minutes: Long, val hours: Long) {
         return time
             .joinToString(":") { it.toString().padStart(2, '0') }
     }
+}
+
+private lateinit var dataSourceFactory: DataSource.Factory
+
+@Synchronized
+fun getReadOnlyDataSourceFactory(context: Context): DataSource.Factory {
+    val appContext = context.applicationContext
+    val upstreamFactory = DefaultDataSource.Factory(
+        appContext,
+        getHttpDataSourceFactory(appContext)
+    )
+    dataSourceFactory = CacheDataSource.Factory()
+        .setUpstreamDataSourceFactory(upstreamFactory)
+        .setCacheWriteDataSinkFactory(null)
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+    return dataSourceFactory
+}
+
+@Synchronized
+fun getHttpDataSourceFactory(context: Context): HttpDataSource.Factory {
+        val httpDataSourceFactory = CronetDataSource.Factory(
+            CronetEngine.Builder(context).build(),
+            Executors.newSingleThreadExecutor()
+        )
+    return httpDataSourceFactory
+}
+
+@Synchronized
+fun getDownloadDirectory(context: Context): File {
+        val downloadDirectory = context.getExternalFilesDir(null) ?: context.filesDir
+    return downloadDirectory
 }

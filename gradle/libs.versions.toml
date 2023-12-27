@@ -10,6 +10,7 @@ compose-plugin = "1.5.11"
 materialIconsExtended = "1.5.4"
 media3Exoplayer = "1.2.0"
 mvvmCore = "0.16.1"
+media3DatasourceCronet = "1.2.0"
 
 [libraries]
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
@@ -26,6 +27,7 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
 mvvm-core = { module = "dev.icerock.moko:mvvm-core", version.ref = "mvvmCore" }
+androidx-media3-datasource-cronet = { group = "androidx.media3", name = "media3-datasource-cronet", version.ref = "media3DatasourceCronet" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

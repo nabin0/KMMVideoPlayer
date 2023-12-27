@@ -8,6 +8,7 @@ expect class VideoPlayerController {
 
     val mediaDuration: MutableStateFlow<Long>
     val isPlaying: MutableStateFlow<Boolean>
+    val isBuffering: MutableStateFlow<Boolean>
 
     @Composable
     fun buildPlayer(onPlayerCreated: (player: Any) -> Unit)
@@ -21,6 +22,9 @@ expect class VideoPlayerController {
     @Composable
     fun enableLandscapeScreenMode()
 
+    @Composable
+    fun handleActivityLifecycleStageChanges()
+
     fun setMediaItem(
         videoLink: String,
         mediaTag: String?,
@@ -28,11 +32,13 @@ expect class VideoPlayerController {
         mediaId: String?,
         subtitleLink: String?,
     )
+
     fun prepare()
     fun play()
     fun pause()
     fun seekTo(millis: Long)
     fun currentPosition(): Long
-
+    fun releasePlayer()
+    fun stop()
     fun playWhenReady(boolean: Boolean)
 }

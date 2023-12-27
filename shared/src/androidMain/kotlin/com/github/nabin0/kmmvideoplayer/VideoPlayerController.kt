@@ -3,10 +3,20 @@ package com.github.nabin0.kmmvideoplayer
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -21,8 +31,14 @@ actual class VideoPlayerController {
     private var exoPlayer: ExoPlayer? = null
 
     actual val mediaDuration: MutableStateFlow<Long> = MutableStateFlow(0L)
+
     actual val isPlaying: MutableStateFlow<Boolean> =
         MutableStateFlow(exoPlayer?.isPlaying ?: false)
+
+    actual val isBuffering: MutableStateFlow<Boolean> =
+        MutableStateFlow(true)
+
+    actual fun currentPosition(): Long = exoPlayer?.currentPosition ?: 0L
 
     @Composable
     actual fun buildPlayer(onPlayerCreated: (player: Any) -> Unit) {
@@ -45,7 +61,16 @@ actual class VideoPlayerController {
                         super.onPlaybackStateChanged(playbackState)
                         if (playbackState == ExoPlayer.STATE_READY && (mediaDuration.value.toInt() == 0)) {
                             mediaDuration.value = contentDuration
+                            isBuffering.value = false
                         }
+
+                        if (playbackState == ExoPlayer.STATE_BUFFERING) {
+                            isBuffering.value = true
+                        } else if (playbackState == ExoPlayer.STATE_READY) {
+                            isBuffering.value = false
+                        }
+
+
                     }
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -144,6 +169,11 @@ actual class VideoPlayerController {
         }) {
             it.player = exoPlayer
             it.useController = useDefaultController
+            it.layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+
+            )
         }
     }
 
@@ -152,13 +182,13 @@ actual class VideoPlayerController {
         exoPlayer?.seekTo(millis)
     }
 
-
-    actual fun currentPosition(): Long = exoPlayer?.currentPosition ?: 0L
-
-
     @Composable
     actual fun enableLandscapeScreenMode() {
         val activity = LocalContext.current as Activity
+        activity.window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
     }
 
@@ -167,6 +197,76 @@ actual class VideoPlayerController {
         val activity = LocalContext.current as Activity
         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
+    }
+
+    actual fun releasePlayer() {
+        stop()
+        exoPlayer?.release()
+    }
+
+    actual fun stop() {
+        exoPlayer?.stop()
+    }
+
+    @Composable
+    actual fun handleActivityLifecycleStageChanges() {
+        DisposableEffectWithLifeCycle(
+            onResume = { play() },
+            onPause = { pause() },
+            onDispose = { releasePlayer() })
+    }
+}
+
+@Composable
+private fun DisposableEffectWithLifeCycle(
+    onResume: () -> Unit,
+    onPause: () -> Unit,
+    onDispose: () -> Unit,
+) {
+
+    val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
+
+    val currentOnResume by rememberUpdatedState(onResume)
+    val currentOnPause by rememberUpdatedState(onPause)
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> {
+
+                }
+
+                Lifecycle.Event.ON_START -> {
+
+                }
+
+                Lifecycle.Event.ON_RESUME -> {
+                    currentOnResume()
+                }
+
+                Lifecycle.Event.ON_PAUSE -> {
+                    currentOnPause()
+                }
+
+                Lifecycle.Event.ON_STOP -> {
+
+                }
+
+                Lifecycle.Event.ON_DESTROY -> {
+
+                }
+
+                else -> {}
+            }
+        }
+
+        // Add the observer to the lifecycle
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            onDispose()
+        }
     }
 
 }
