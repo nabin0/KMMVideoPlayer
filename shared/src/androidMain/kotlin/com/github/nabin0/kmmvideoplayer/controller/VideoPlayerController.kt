@@ -1,27 +1,20 @@
-package com.github.nabin0.kmmvideoplayer
+package com.github.nabin0.kmmvideoplayer.controller
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +34,7 @@ actual class VideoPlayerController {
     actual fun currentPosition(): Long = exoPlayer?.currentPosition ?: 0L
 
     @Composable
-    actual fun buildPlayer(onPlayerCreated: (player: Any) -> Unit) {
+    actual fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit) {
         val context = LocalContext.current
         exoPlayer = ExoPlayer.Builder(context).build().apply {
             this.addListener(
@@ -51,6 +44,11 @@ actual class VideoPlayerController {
                         events: Player.Events,
                     ) {
                         super.onEvents(player, events)
+                        // Triggers collector when next media item is auto player after finishing first one
+                        mediaDuration.value = player.contentDuration
+                    }
+
+                    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
                     }
 
                     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -64,14 +62,19 @@ actual class VideoPlayerController {
                             isBuffering.value = false
                         }
 
-                        if (playbackState == ExoPlayer.STATE_BUFFERING) {
+
+                        if (playbackState == Player.STATE_BUFFERING) {
                             isBuffering.value = true
-                        } else if (playbackState == ExoPlayer.STATE_READY) {
+                        } else if (playbackState == Player.STATE_READY) {
                             isBuffering.value = false
                         }
 
-
                     }
+
+                    override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                        super.onTimelineChanged(timeline, reason)
+                    }
+
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         super.onIsPlayingChanged(isPlaying)
@@ -148,8 +151,7 @@ actual class VideoPlayerController {
             if (subtitleLink != null) {
                 mediaItemBuilder.setSubtitleConfigurations(
                     listOf(
-                        MediaItem.SubtitleConfiguration
-                            .Builder(Uri.parse(subtitleLink))
+                        MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitleLink))
                             .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                             .setLanguage("en")
                             .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
@@ -169,7 +171,7 @@ actual class VideoPlayerController {
         }) {
             it.player = exoPlayer
             it.useController = useDefaultController
-            it.layoutParams = FrameLayout.LayoutParams(
+            it.layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
 
@@ -183,7 +185,7 @@ actual class VideoPlayerController {
     }
 
     @Composable
-    actual fun enableLandscapeScreenMode() {
+    actual fun EnableLandscapeScreenMode() {
         val activity = LocalContext.current as Activity
         activity.window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -193,7 +195,7 @@ actual class VideoPlayerController {
     }
 
     @Composable
-    actual fun enablePortraitScreenMode() {
+    actual fun EnablePortraitScreenMode() {
         val activity = LocalContext.current as Activity
         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
@@ -209,64 +211,70 @@ actual class VideoPlayerController {
     }
 
     @Composable
-    actual fun handleActivityLifecycleStageChanges() {
+    actual fun HandleActivityLifecycleStageChanges() {
         DisposableEffectWithLifeCycle(
             onResume = { play() },
             onPause = { pause() },
             onDispose = { releasePlayer() })
     }
-}
 
-@Composable
-private fun DisposableEffectWithLifeCycle(
-    onResume: () -> Unit,
-    onPause: () -> Unit,
-    onDispose: () -> Unit,
-) {
+    actual fun addPlayList(listOfVideoUrls: List<String>) {
+        val listOfMediaItems = mutableListOf<MediaItem>()
 
-    val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
-
-    val currentOnResume by rememberUpdatedState(onResume)
-    val currentOnPause by rememberUpdatedState(onPause)
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_CREATE -> {
-
-                }
-
-                Lifecycle.Event.ON_START -> {
-
-                }
-
-                Lifecycle.Event.ON_RESUME -> {
-                    currentOnResume()
-                }
-
-                Lifecycle.Event.ON_PAUSE -> {
-                    currentOnPause()
-                }
-
-                Lifecycle.Event.ON_STOP -> {
-
-                }
-
-                Lifecycle.Event.ON_DESTROY -> {
-
-                }
-
-                else -> {}
-            }
+        for (videoUrlString in listOfVideoUrls) {
+            listOfMediaItems.add(
+                buildMediaItem(
+                    videoLink = videoUrlString,
+                    mediaTag = null,
+                    displayTitle = null,
+                    mediaId = null,
+                    subtitleLink = null
+                )
+            )
         }
 
-        // Add the observer to the lifecycle
-        lifecycleOwner.lifecycle.addObserver(observer)
+        if (listOfMediaItems.isNotEmpty())
+            exoPlayer?.addMediaItems(listOfMediaItems)
+    }
 
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            onDispose()
+    actual fun setPlayList(listOfVideoUrls: List<String>) {
+        val listOfMediaItems = mutableListOf<MediaItem>()
+
+        for (videoUrlString in listOfVideoUrls) {
+            listOfMediaItems.add(
+                buildMediaItem(
+                    videoLink = videoUrlString,
+                    mediaTag = null,
+                    displayTitle = null,
+                    mediaId = null,
+                    subtitleLink = null
+                )
+            )
+        }
+
+        if (listOfMediaItems.isNotEmpty())
+            exoPlayer?.setMediaItems(listOfMediaItems)
+    }
+
+    actual fun playNextFromPlaylist() {
+        if (exoPlayer?.hasNextMediaItem() == true) {
+            mediaDuration.value = 0
+            exoPlayer?.seekToNextMediaItem()
         }
     }
 
+    actual fun playPreviousFromPlaylist() {
+        if (exoPlayer?.hasPreviousMediaItem() == true) {
+            mediaDuration.value = 0
+            exoPlayer?.seekToPreviousMediaItem()
+        }
+    }
+
+    private var currentPlaybackSpeed = 1f
+    actual fun setPlaybackSpeed(selectedPlaybackSpeed: Float) {
+        currentPlaybackSpeed = selectedPlaybackSpeed
+        exoPlayer?.setPlaybackSpeed(selectedPlaybackSpeed)
+    }
+
+    actual fun getCurrentPlaybackSpeed(): Float = currentPlaybackSpeed
 }

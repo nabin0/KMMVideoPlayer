@@ -1,4 +1,4 @@
-package com.github.nabin0.kmmvideoplayer
+package com.github.nabin0.kmmvideoplayer.controller
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -11,19 +11,19 @@ expect class VideoPlayerController {
     val isBuffering: MutableStateFlow<Boolean>
 
     @Composable
-    fun buildPlayer(onPlayerCreated: (player: Any) -> Unit)
+    fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit)
 
     @Composable
-    fun PlayerView(useDefaultController: Boolean = true , modifier: Modifier = Modifier)
+    fun PlayerView(useDefaultController: Boolean = true, modifier: Modifier = Modifier)
 
     @Composable
-    fun enablePortraitScreenMode()
+    fun EnablePortraitScreenMode()
 
     @Composable
-    fun enableLandscapeScreenMode()
+    fun EnableLandscapeScreenMode()
 
     @Composable
-    fun handleActivityLifecycleStageChanges()
+    fun HandleActivityLifecycleStageChanges()
 
     fun setMediaItem(
         videoLink: String,
@@ -41,4 +41,17 @@ expect class VideoPlayerController {
     fun releasePlayer()
     fun stop()
     fun playWhenReady(boolean: Boolean)
+
+    // TODO: Change to list of a data object with required data to create media item
+    fun addPlayList(listOfVideoUrls: List<String>)
+
+    fun setPlayList(listOfVideoUrls: List<String>)
+
+    fun playNextFromPlaylist()
+
+    fun playPreviousFromPlaylist()
+
+    fun setPlaybackSpeed(selectedPlaybackSpeed: Float)
+
+    fun getCurrentPlaybackSpeed(): Float
 }

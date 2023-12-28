@@ -1,4 +1,4 @@
-package com.github.nabin0.kmmvideoplayer
+package com.github.nabin0.kmmvideoplayer.utils
 
 fun convertMillisToReadableTime(millis: Long): ReadableTime {
     var availableSeconds = millis / 1000;
