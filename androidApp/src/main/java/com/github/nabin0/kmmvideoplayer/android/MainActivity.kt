@@ -24,12 +24,14 @@ class MainActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    com.github.nabin0.kmmvideoplayer.view.VideoPlayer(
-                        modifier = Modifier.fillMaxWidth(),
-                        videoUrl = null,
-                        videoPlayerController = videoPlayer,
-                        listOfVideoUrls = listOfVideoUrls
-                    )
+//                    com.github.nabin0.kmmvideoplayer.view.VideoPlayer(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        videoUrl = null,
+//                        videoPlayerController = videoPlayer,
+//                        listOfVideoUrls = listOfVideoUrls
+//                    )
+
+                    VideoPlayer()
                 }
             }
         }
