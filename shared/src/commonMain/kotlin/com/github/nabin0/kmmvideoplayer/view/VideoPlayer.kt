@@ -25,7 +25,7 @@ import kotlinx.coroutines.yield
 @Composable
 fun VideoPlayer(
     modifier: Modifier = Modifier,
-    videoUrl: String?,
+    videoItem: VideoItem?,
     videoPlayerController: VideoPlayerController,
     listOfVideoUrls: List<VideoItem>?, // Change url to a custom video object with required params
 ) {
@@ -33,13 +33,14 @@ fun VideoPlayer(
     var isControllerCreated by rememberSaveable { mutableStateOf(false) }
     if (!isControllerCreated) {
         rememberedPlayerController.BuildPlayer { }
-        videoUrl?.let { url ->
-            rememberedPlayerController.setMediaItem(VideoItem(videoUrl, null, null, null, null))
+        videoItem?.let { url ->
+            rememberedPlayerController.setMediaItem(videoItem)
         }
         listOfVideoUrls?.let {
             rememberedPlayerController.setPlayList(it)
         }
         rememberedPlayerController.prepare()
+        rememberedPlayerController.setCCEnabled(false)
         rememberedPlayerController.playWhenReady(true)
         rememberedPlayerController.HandleActivityLifecycleStageChanges()
         isControllerCreated = true

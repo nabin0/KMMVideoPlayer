@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
+import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
 import com.github.nabin0.kmmvideoplayer.utils.convertMillisToReadableTime
 import com.github.nabin0.kmmvideoplayer.utils.noRippleClickable
@@ -376,7 +377,8 @@ fun VideoPreferencesBox(
     val videoQualitiesList by videoPlayerController.listOfVideoResolutions.collectAsState()
 
     var selectedPreferenceOptionIndex by remember { mutableStateOf(0) }
-    val preferenceOptions = remember { listOf("PlaybackSpeed", "Video Quality") }
+    val ccList by videoPlayerController.listOfCC.collectAsState()
+    val preferenceOptions = remember { listOf("PlaybackSpeed", "Video Quality", "Closed Caption") }
 
     Row(modifier = Modifier.fillMaxWidth().background(Color.Black)) {
         Surface(modifier = Modifier.weight(1f)) {
@@ -428,6 +430,16 @@ fun VideoPreferencesBox(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+            }else if(selectedPreferenceOptionIndex == 2){
+                if(!ccList.isNullOrEmpty()){
+                    CCSelectorDialogBox(
+                        ccList = ccList!!,
+                        currentSelectedCC = videoPlayerController.getCurrentCC(),
+                        onItemSelected = {videoPlayerController.setSpecificCC(it)},
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
                 }
             }
         }
@@ -501,6 +513,46 @@ fun VideoResolutionDialogBox(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = item.value,
+                    style = textStyle.copy(textAlign = TextAlign.Start),
+                    modifier = Modifier.weight(1f)
+                )
+
+            }
+        }
+    }
+}
+
+
+@Composable
+fun CCSelectorDialogBox(
+    ccList: List<ClosedCaptionForTrackSelector>,
+    currentSelectedCC: ClosedCaptionForTrackSelector,
+    onItemSelected: (ClosedCaptionForTrackSelector) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var localVideoSelectedQuality by remember { mutableStateOf(currentSelectedCC) }
+    LazyColumn(
+        modifier = modifier.fillMaxWidth().background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        itemsIndexed(items = ccList) { index, item ->
+            Row(
+                modifier = Modifier.clickable {
+                    onItemSelected(item)
+                    localVideoSelectedQuality = item
+                }.fillMaxWidth().padding(vertical = 1.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val textStyle = if (localVideoSelectedQuality.index == item.index)
+                    TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Green)
+                else TextStyle(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = item.language,
                     style = textStyle.copy(textAlign = TextAlign.Start),
                     modifier = Modifier.weight(1f)
                 )

@@ -3,7 +3,6 @@ package com.github.nabin0.kmmvideoplayer.controller
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.util.Log
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
@@ -22,6 +21,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
+import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +30,7 @@ actual class VideoPlayerController {
 
     private var exoPlayer: ExoPlayer? = null
     private var currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
+    private var currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off")
 
     private var audioTrackGroup: Any? = null
     private var videoTrackGroup: Any? = null
@@ -39,9 +40,9 @@ actual class VideoPlayerController {
     actual fun getCurrentPlaybackSpeed(): Float = currentPlaybackSpeed
     actual val listOfVideoResolutions: MutableStateFlow<List<VideoQuality>?> =
         MutableStateFlow(null)
-    actual val listOfAudioFormats: MutableStateFlow<List<VideoQuality>?> = MutableStateFlow(null)
-    actual val listOfSubtitles: MutableStateFlow<List<VideoQuality>?> = MutableStateFlow(null)
-
+    actual val listOfAudioFormats: MutableStateFlow<List<String>?> = MutableStateFlow(null)
+    actual val listOfCC: MutableStateFlow<List<ClosedCaptionForTrackSelector>?> =
+        MutableStateFlow(null)
 
     actual val mediaDuration: MutableStateFlow<Long> = MutableStateFlow(0L)
 
@@ -62,24 +63,34 @@ actual class VideoPlayerController {
 
                     override fun onTracksChanged(tracks: Tracks) {
                         super.onTracksChanged(tracks)
+                        listOfVideoResolutions.value = null
+                        listOfCC.value = null
                         val videoResolutions: MutableList<VideoQuality> = mutableListOf()
-//                        val audioFormats = mutableStateListOf<>()
-//                        val subtitlesList = mutableStateListOf<VideoQuality>()
+                        val subtitlesList = mutableStateListOf<ClosedCaptionForTrackSelector>()
 
                         for (trackGroup in tracks.groups) {
                             // Group level information.
                             val trackType = trackGroup.type
                             val trackInGroupIsSelected = trackGroup.isSelected
                             val trackInGroupIsSupported = trackGroup.isSupported
-                            Log.d("TAG", "track type $trackType")
 
                             if (trackType == C.TRACK_TYPE_VIDEO) {
                                 videoTrackGroup = trackGroup
                                 for (i in 0 until trackGroup.length) {
+                                    val isSelected = trackGroup.isTrackSelected(i)
                                     val trackFormat = trackGroup.getTrackFormat(i)
                                     val trackIndex = i
                                     val trackName = "${trackFormat.height} p"
                                     val resolutionKey = trackFormat.height
+                                    if ((isSelected && currentSelectedVideoQuality.index != -1)) {
+                                        currentSelectedVideoQuality = VideoQuality(
+                                            trackIndex,
+                                            trackName,
+                                            resolutionKey
+                                        )
+                                    }
+                                    if (trackGroup.length == 1)
+                                        currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
                                     videoResolutions.add(
                                         VideoQuality(
                                             trackIndex,
@@ -99,23 +110,31 @@ actual class VideoPlayerController {
                                 } else {
                                     listOfVideoResolutions.value = null
                                 }
-
                             }
-                            if (trackType == C.TRACK_TYPE_AUDIO) {
-                                // audioTrackGroup = trackGroup
-                                Log.d("TAG", "this is track type audio: ")
 
-                            }
                             if (trackType == C.TRACK_TYPE_TEXT) {
-                                Log.d("TAG", "this is track type text: ")
-                                for(i in 0..trackGroup.length){
+                                textTrackGroup = trackGroup
+                                subtitlesList.add(ClosedCaptionForTrackSelector(-1, "Off"))
+                                for (i in 0 until trackGroup.length) {
+                                    val isSelected = trackGroup.isTrackSelected(i)
                                     val trackFormat = trackGroup.getTrackFormat(i)
-
-                                    Log.d("TAG", " ${trackFormat.language} ")
-                                    Log.d("TAG", " ${trackFormat} ")
+                                    if (isSelected) {
+                                        currentSelectedCC = ClosedCaptionForTrackSelector(
+                                            index = i,
+                                            language = trackFormat.language.toString()
+                                        )
+                                    }
+                                    if (!subtitlesList.isEmpty())
+                                        subtitlesList.add(
+                                            ClosedCaptionForTrackSelector(
+                                                index = i,
+                                                language = trackFormat.language.toString()
+                                            )
+                                        )
+                                    else listOfCC.value = null
                                 }
+                                listOfCC.value = subtitlesList
                             }
-
                         }
                     }
 
@@ -205,32 +224,33 @@ actual class VideoPlayerController {
                     .setDisplayTitle(videoItem.title)
                     .build()
             )
-        when (Util.inferContentType(Uri.parse(videoItem.videoUrl))) {
-            C.CONTENT_TYPE_SS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_SS)
-            C.CONTENT_TYPE_DASH -> {
-                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
-                videoItem.licenseUrl?.let {
-                    mediaItemBuilder.setDrmConfiguration(
-                        DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                            .setLicenseUri(videoItem.licenseUrl).build()
-                    )
+        var mediaItem: MediaItem
+        try {
+            when (Util.inferContentType(Uri.parse(videoItem.videoUrl))) {
+                C.CONTENT_TYPE_SS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_SS)
+                C.CONTENT_TYPE_DASH -> {
+                    mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
+                    videoItem.licenseUrl?.let {
+                        mediaItemBuilder.setDrmConfiguration(
+                            DrmConfiguration.Builder(C.WIDEVINE_UUID)
+                                .setLicenseUri(videoItem.licenseUrl).build()
+                        )
+                    }
                 }
+
+                C.CONTENT_TYPE_HLS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                C.CONTENT_TYPE_OTHER -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MP4)
+                else -> {}
             }
 
-            C.CONTENT_TYPE_HLS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-            C.CONTENT_TYPE_OTHER -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MP4)
-            else -> {}
-        }
-
-        val mediaItem =
-            if (videoItem.listOfExternalSubtitleLink != null) {
+            mediaItem = if (videoItem.listOfClosedCaptions != null) {
                 val listOfSubtitleConfiguration = mutableListOf<MediaItem.SubtitleConfiguration>()
 
-                for (subtitleLink in videoItem.listOfExternalSubtitleLink) {
+                for (cc in videoItem.listOfClosedCaptions) {
                     listOfSubtitleConfiguration.add(
-                        MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitleLink))
+                        MediaItem.SubtitleConfiguration.Builder(Uri.parse(cc.subtitleLink))
                             .setMimeType(MimeTypes.APPLICATION_SUBRIP)
-                            .setLanguage("en")
+                            .setLanguage(cc.language)
                             .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
                             .build()
                     )
@@ -239,7 +259,14 @@ actual class VideoPlayerController {
             } else {
                 mediaItemBuilder.build()
             }
+            return mediaItem
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        mediaItem = mediaItemBuilder.build()
         return mediaItem
+
     }
 
     @Composable
@@ -339,28 +366,72 @@ actual class VideoPlayerController {
     }
 
     actual fun setSpecificVideoQuality(videoQuality: VideoQuality) {
-        currentSelectedVideoQuality = videoQuality
-        exoPlayer?.let {
-            if (videoQuality.index == -1) {
-                it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
-                    .clearOverride((videoTrackGroup as Tracks.Group).mediaTrackGroup).build()
-                return
+        try {
+            currentSelectedVideoQuality = videoQuality
+            exoPlayer?.let {
+                if (videoQuality.index == -1) {
+                    it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
+                        .clearOverride((videoTrackGroup as Tracks.Group).mediaTrackGroup).build()
+                    return
+                }
+                it.trackSelectionParameters =
+                    it.trackSelectionParameters
+                        .buildUpon()
+                        .setOverrideForType(
+                            TrackSelectionOverride(
+                                (videoTrackGroup as Tracks.Group).mediaTrackGroup,
+                                videoQuality.index
+                            )
+                        ).build()
             }
-            it.trackSelectionParameters =
-                it.trackSelectionParameters
-                    .buildUpon()
-                    .setOverrideForType(
-                        TrackSelectionOverride(
-                            (videoTrackGroup as Tracks.Group).mediaTrackGroup,
-                            videoQuality.index
-                        )
-                    ).build()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+
     }
 
     actual fun getCurrentVideoStreamingQuality(): VideoQuality {
         return currentSelectedVideoQuality
     }
 
+    actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
+        try {
+            currentSelectedCC = cc
+
+            exoPlayer?.let {
+                it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false).build()
+                if (cc.index == -1) {
+                    it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
+                        .clearOverride((textTrackGroup as Tracks.Group).mediaTrackGroup).build()
+                    setCCEnabled(false)
+                    return
+                }
+                it.trackSelectionParameters =
+                    it.trackSelectionParameters
+                        .buildUpon()
+                        .setOverrideForType(
+                            TrackSelectionOverride(
+                                (textTrackGroup as Tracks.Group).mediaTrackGroup,
+                                cc.index
+                            )
+                        ).build()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    actual fun getCurrentCC(): ClosedCaptionForTrackSelector = currentSelectedCC
+
+    actual fun setCCEnabled(enabled: Boolean) {
+        exoPlayer?.let {
+            if (!enabled) {
+                it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true).build()
+
+            }
+        }
+    }
 
 }

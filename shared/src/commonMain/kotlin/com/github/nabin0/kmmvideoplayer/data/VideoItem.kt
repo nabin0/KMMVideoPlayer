@@ -5,5 +5,5 @@ data class VideoItem(
     val title: String? = "Unknown",
     val videoDescription: String? = "Unknown",
     val licenseUrl: String? = null,
-    val listOfExternalSubtitleLink: List<String>? = null
-    )
+    val listOfClosedCaptions: List<ClosedCaption>? = null,
+)
