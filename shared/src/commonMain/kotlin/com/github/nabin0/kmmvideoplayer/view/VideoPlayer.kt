@@ -17,7 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
-import com.github.nabin0.kmmvideoplayer.noRippleClickable
+import com.github.nabin0.kmmvideoplayer.data.VideoItem
+import com.github.nabin0.kmmvideoplayer.utils.noRippleClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 
@@ -26,14 +27,14 @@ fun VideoPlayer(
     modifier: Modifier = Modifier,
     videoUrl: String?,
     videoPlayerController: VideoPlayerController,
-    listOfVideoUrls: List<String>?, // Change url to a custom video object with required params
+    listOfVideoUrls: List<VideoItem>?, // Change url to a custom video object with required params
 ) {
     val rememberedPlayerController = remember { videoPlayerController }
     var isControllerCreated by rememberSaveable { mutableStateOf(false) }
     if (!isControllerCreated) {
         rememberedPlayerController.BuildPlayer { }
         videoUrl?.let { url ->
-            rememberedPlayerController.setMediaItem(videoLink = url, null, null, null, null)
+            rememberedPlayerController.setMediaItem(VideoItem(videoUrl, null, null, null, null))
         }
         listOfVideoUrls?.let {
             rememberedPlayerController.setPlayList(it)
@@ -68,13 +69,11 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
     }
 
     val videoViewModifier = if (enableLandscapeMode) Modifier else modifier.fillMaxHeight(0.27f)
-    Box(modifier = videoViewModifier) {
+    Box(modifier = videoViewModifier.background(Color.Black)) {
 
         videoPlayerController.PlayerView(modifier = Modifier.fillMaxWidth().noRippleClickable {
             showOverlay = true
         }, useDefaultController = false)
-
-
 
         VideoPlayerOverlay(
             modifier = Modifier.matchParentSize(),
@@ -89,14 +88,22 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
         )
 
         if (showCustomDialogBoxForVideoControls) {
+            CustomDialogBox(
+                onHideBoxClicked = {
+                    showCustomDialogBoxForVideoControls = false
+                },
+                content = {
 
-            CustomDialogBox(onHideBoxClicked = {
-                showCustomDialogBoxForVideoControls = false
-            }, content = {
-                PlaybackSpeedList(currentPlaybackSpeed = videoPlayerController.getCurrentPlaybackSpeed(), onPlaybackSpeedSelected = {
-                    videoPlayerController.setPlaybackSpeed(it)
-                }, modifier = Modifier.fillMaxWidth())
-            }, modifier = Modifier.padding(horizontal = 30.dp, vertical = 16.dp).fillMaxSize().background(Color.Black))
+                  VideoPreferencesBox(
+                      videoPlayerController  = videoPlayerController,
+                      modifier = Modifier.fillMaxSize()
+                  )
+
+
+                },
+                modifier = Modifier.padding(horizontal = 30.dp, vertical = 16.dp).fillMaxSize()
+                    .background(Color.Black)
+            )
         }
     }
 }

@@ -13,18 +13,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.C
-import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
@@ -32,8 +28,10 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.github.nabin0.kmmvideoplayer.data.VideoQuality
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -44,15 +42,15 @@ fun VideoPlayer(
     val mediaItemBuilder = MediaItem.Builder()
 
 
-//    val type =
-//        Util.inferContentType(Uri.parse("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"))
-//    when (type) {
-//        C.CONTENT_TYPE_SS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_SS)
-//        C.CONTENT_TYPE_DASH -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
-//        C.CONTENT_TYPE_HLS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-//        C.CONTENT_TYPE_OTHER -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MP4)
-//        else -> {}
-//    }
+    val type =
+        Util.inferContentType(Uri.parse("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8"))
+    when (type) {
+        C.CONTENT_TYPE_SS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_SS)
+        C.CONTENT_TYPE_DASH -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MPD)
+        C.CONTENT_TYPE_HLS -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        C.CONTENT_TYPE_OTHER -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MP4)
+        else -> {}
+    }
 
 
     val drmMediaItem = MediaItem.Builder()
@@ -89,7 +87,7 @@ fun VideoPlayer(
     var audioTrackGroup = Any()
     var videoTrackGroup = Any()
 
-    val listOfVideoQualtites = remember { mutableStateListOf<Format>() }
+    val listOfVideoQualtites = remember { mutableStateListOf<VideoQuality>() }
 
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -113,8 +111,18 @@ fun VideoPlayer(
                             listOfVideoQualtites.removeAll(listOfVideoQualtites)
                             for (i in 0 until trackGroup.length) {
                                 val trackFormat = trackGroup.getTrackFormat(i)
-                                listOfVideoQualtites.add(trackFormat)
+                                val trackIndex = i
+                                val trackName = "${trackFormat.height} p"
+                                val resolutionKey = trackFormat.height
+                                listOfVideoQualtites.add(VideoQuality(trackIndex, trackName, resolutionKey))
                             }
+
+                            listOfVideoQualtites?.distinctBy { it.resolutionKey }
+                                ?.sortedByDescending { it.resolutionKey }
+                                ?.toMutableList()
+                                ?.takeIf { it.isNotEmpty() }?.also {
+                                    it.add(0, VideoQuality(0, "Auto", 0))
+                                }
 
                             Log.d("TAG", "this is track type video: ")
                         }
@@ -161,14 +169,14 @@ fun VideoPlayer(
             }
         }
 
-        itemsIndexed(items = listOfVideoQualtites) { index: Int, item: Format ->
+        itemsIndexed(items = listOfVideoQualtites) { index: Int, item: VideoQuality ->
             Row(
                 Modifier
                     .fillMaxWidth()
                     .background(Color.Red)
             ) {
 
-                Text(text = "width ${item.width} x height ${item.height} ",
+                Text(text = item.value,
                     Modifier
                         .fillMaxWidth()
                         .clickable {
@@ -178,7 +186,7 @@ fun VideoPlayer(
                                     .setOverrideForType(
                                         TrackSelectionOverride(
                                             (videoTrackGroup as Tracks.Group).mediaTrackGroup,
-                                            index
+                                            item.index
                                         )
                                     )
                                     .build()

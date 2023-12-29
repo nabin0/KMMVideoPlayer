@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -23,6 +25,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
@@ -54,8 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
-import com.github.nabin0.kmmvideoplayer.noRippleClickable
+import com.github.nabin0.kmmvideoplayer.data.VideoQuality
 import com.github.nabin0.kmmvideoplayer.utils.convertMillisToReadableTime
+import com.github.nabin0.kmmvideoplayer.utils.noRippleClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 
@@ -343,44 +347,6 @@ fun BoxScope.VideoCurrentProgressData(
     }
 }
 
-@Composable
-fun PlaybackSpeedList(
-    currentPlaybackSpeed: Float,
-    onPlaybackSpeedSelected: (Float) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var localCurrentPlaybackSpeed by remember { mutableStateOf(currentPlaybackSpeed) }
-    val listOfPlaybackSpeeds = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
-    LazyColumn(
-        modifier = modifier.fillMaxWidth().background(Color.Black),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        itemsIndexed(items = listOfPlaybackSpeeds) { index, item ->
-            Row(
-                modifier = Modifier.clickable {
-                    onPlaybackSpeedSelected(item)
-                    localCurrentPlaybackSpeed = item
-                }.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val textStyle = if (localCurrentPlaybackSpeed == item)
-                    TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Green)
-                else TextStyle(
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.weight(0.9f))
-                Text(
-                    text = "${item}x",
-                    style = textStyle.copy(textAlign = TextAlign.Start),
-                    modifier = Modifier.weight(1f)
-                )
-
-            }
-        }
-    }
-}
 
 @Composable
 fun CustomDialogBox(
@@ -399,5 +365,147 @@ fun CustomDialogBox(
             )
         }
         content()
+    }
+}
+
+@Composable
+fun VideoPreferencesBox(
+    videoPlayerController: VideoPlayerController,
+    modifier: Modifier = Modifier,
+) {
+    val videoQualitiesList by videoPlayerController.listOfVideoResolutions.collectAsState()
+
+    var selectedPreferenceOptionIndex by remember { mutableStateOf(0) }
+    val preferenceOptions = remember { listOf("PlaybackSpeed", "Video Quality") }
+
+    Row(modifier = Modifier.fillMaxWidth().background(Color.Black)) {
+        Surface(modifier = Modifier.weight(1f)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().background(Color.Black)) {
+                itemsIndexed(items = preferenceOptions) { index, item ->
+                    Row(
+                        modifier = Modifier.clickable {
+                            selectedPreferenceOptionIndex = index
+                        }.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val textStyle = if (selectedPreferenceOptionIndex == index)
+                            TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.Green
+                            )
+                        else TextStyle(
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                        Text(
+                            text = item,
+                            style = textStyle.copy(textAlign = TextAlign.Start),
+                        )
+                    }
+                }
+
+            }
+        }
+        Spacer(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Red))
+        Surface(modifier = Modifier.weight(1f)) {
+            if (selectedPreferenceOptionIndex == 0) {
+                PlaybackSpeedList(
+                    currentPlaybackSpeed = videoPlayerController.getCurrentPlaybackSpeed(),
+                    onPlaybackSpeedSelected = {
+                        videoPlayerController.setPlaybackSpeed(it)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else if (selectedPreferenceOptionIndex == 1) {
+                if (videoQualitiesList != null) {
+                    VideoResolutionDialogBox(
+                        videoQualitiesList = videoQualitiesList!!,
+                        currentSelectedQuality = videoPlayerController.getCurrentVideoStreamingQuality(),
+                        onItemSelected = {
+                            videoPlayerController.setSpecificVideoQuality(it)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaybackSpeedList(
+    currentPlaybackSpeed: Float,
+    onPlaybackSpeedSelected: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var localCurrentPlaybackSpeed by remember { mutableStateOf(currentPlaybackSpeed) }
+    val listOfPlaybackSpeeds = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+    LazyColumn(
+        modifier = modifier.fillMaxWidth().background(Color.Black),
+    ) {
+        itemsIndexed(items = listOfPlaybackSpeeds) { index, item ->
+            Row(
+                modifier = Modifier.clickable {
+                    onPlaybackSpeedSelected(item)
+                    localCurrentPlaybackSpeed = item
+                }.fillMaxWidth().padding(1.dp),
+            ) {
+                val textStyle = if (localCurrentPlaybackSpeed == item)
+                    TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Green)
+                else TextStyle(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "${item}x",
+                    style = textStyle.copy(textAlign = TextAlign.Start),
+                    modifier = Modifier.weight(1f)
+                )
+
+            }
+        }
+    }
+}
+
+@Composable
+fun VideoResolutionDialogBox(
+    videoQualitiesList: List<VideoQuality>,
+    currentSelectedQuality: VideoQuality,
+    onItemSelected: (VideoQuality) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var localVideoSelectedQuality by remember { mutableStateOf(currentSelectedQuality) }
+    LazyColumn(
+        modifier = modifier.fillMaxWidth().background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        itemsIndexed(items = videoQualitiesList) { index, item ->
+            Row(
+                modifier = Modifier.clickable {
+                    onItemSelected(item)
+                    localVideoSelectedQuality = item
+                }.fillMaxWidth().padding(vertical = 1.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val textStyle = if (localVideoSelectedQuality.index == item.index)
+                    TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Green)
+                else TextStyle(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = item.value,
+                    style = textStyle.copy(textAlign = TextAlign.Start),
+                    modifier = Modifier.weight(1f)
+                )
+
+            }
+        }
     }
 }

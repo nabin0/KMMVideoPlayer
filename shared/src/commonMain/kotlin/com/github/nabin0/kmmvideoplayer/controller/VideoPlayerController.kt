@@ -2,6 +2,8 @@ package com.github.nabin0.kmmvideoplayer.controller
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.github.nabin0.kmmvideoplayer.data.VideoItem
+import com.github.nabin0.kmmvideoplayer.data.VideoQuality
 import kotlinx.coroutines.flow.MutableStateFlow
 
 expect class VideoPlayerController {
@@ -9,6 +11,10 @@ expect class VideoPlayerController {
     val mediaDuration: MutableStateFlow<Long>
     val isPlaying: MutableStateFlow<Boolean>
     val isBuffering: MutableStateFlow<Boolean>
+
+    val listOfVideoResolutions: MutableStateFlow<List<VideoQuality>?>
+    val listOfAudioFormats: MutableStateFlow<List<VideoQuality>?>
+    val listOfSubtitles: MutableStateFlow<List<VideoQuality>?>
 
     @Composable
     fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit)
@@ -25,13 +31,7 @@ expect class VideoPlayerController {
     @Composable
     fun HandleActivityLifecycleStageChanges()
 
-    fun setMediaItem(
-        videoLink: String,
-        mediaTag: String?,
-        displayTitle: String?,
-        mediaId: String?,
-        subtitleLink: String?,
-    )
+    fun setMediaItem(videoItem: VideoItem)
 
     fun prepare()
     fun play()
@@ -42,10 +42,9 @@ expect class VideoPlayerController {
     fun stop()
     fun playWhenReady(boolean: Boolean)
 
-    // TODO: Change to list of a data object with required data to create media item
-    fun addPlayList(listOfVideoUrls: List<String>)
+    fun addPlayList(listOfVideos: List<VideoItem>)
 
-    fun setPlayList(listOfVideoUrls: List<String>)
+    fun setPlayList(listOfVideos: List<VideoItem>)
 
     fun playNextFromPlaylist()
 
@@ -54,4 +53,8 @@ expect class VideoPlayerController {
     fun setPlaybackSpeed(selectedPlaybackSpeed: Float)
 
     fun getCurrentPlaybackSpeed(): Float
+
+    fun getCurrentVideoStreamingQuality(): VideoQuality
+
+    fun setSpecificVideoQuality(videoQuality: VideoQuality)
 }

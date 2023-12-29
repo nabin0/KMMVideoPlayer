@@ -1,4 +1,4 @@
-package com.github.nabin0.kmmvideoplayer
+package com.github.nabin0.kmmvideoplayer.utils
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
