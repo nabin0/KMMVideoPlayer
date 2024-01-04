@@ -6,10 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerControllerFactory
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaption
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
+import com.github.nabin0.kmmvideoplayer.view.VideoPlayer
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +51,7 @@ class MainActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    com.github.nabin0.kmmvideoplayer.view.VideoPlayer(
+                    VideoPlayer(
                         modifier = Modifier.fillMaxWidth(),
                         videoItem = null,
                         videoPlayerController = videoPlayer,
@@ -58,9 +62,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
 }
-

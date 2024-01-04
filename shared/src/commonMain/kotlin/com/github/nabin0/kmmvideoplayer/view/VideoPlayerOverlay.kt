@@ -86,7 +86,7 @@ fun BoxScope.VideoPlayerOverlay(
         )
     }
 
-    if (showOverLay && videoDuration > 0) {
+    if (showOverLay) {
         LaunchedEffect(Unit) {
             while (true) {
                 yield()
@@ -105,7 +105,7 @@ fun BoxScope.VideoPlayerOverlay(
 
             PlayerControlButtons(
                 isPaused = !isPlaying,
-                isBuffering = isBuffering,
+                showProgressIndicator = isBuffering && videoDuration > 0,
                 pause = { videoPlayerController.pause() },
                 resume = { videoPlayerController.play() },
                 seekForward = { videoPlayerController.seekTo(currentPosition?.plus(it) ?: 0) },
@@ -161,7 +161,7 @@ fun BoxScope.VideoTopRowControls(
 @Composable
 fun BoxScope.PlayerControlButtons(
     isPaused: Boolean,
-    isBuffering: Boolean,
+    showProgressIndicator: Boolean,
     pause: () -> Unit,
     resume: () -> Unit,
     skipToPreviousMediaItem: () -> Unit,
@@ -199,7 +199,7 @@ fun BoxScope.PlayerControlButtons(
             playerControlIcon(Icons.Rounded.Replay10, 35.dp)
         }
 
-        if (isBuffering) {
+        if (showProgressIndicator) {
             CircularProgressIndicator(
                 modifier = Modifier.size(50.dp),
                 color = Color.White

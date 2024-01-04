@@ -3,6 +3,7 @@ package com.github.nabin0.kmmvideoplayer.controller
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
+import android.util.Log
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
@@ -15,6 +16,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaItem.DrmConfiguration
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.TrackSelectionOverride
@@ -138,6 +140,7 @@ actual class VideoPlayerController {
                         }
                     }
 
+
                     override fun onEvents(
                         player: Player,
                         events: Player.Events,
@@ -162,10 +165,17 @@ actual class VideoPlayerController {
                         }
 
 
-                        if (playbackState == Player.STATE_BUFFERING) {
-                            isBuffering.value = true
-                        } else if (playbackState == Player.STATE_READY) {
-                            isBuffering.value = false
+                        when (playbackState) {
+                            Player.STATE_BUFFERING -> {
+                                isBuffering.value = true
+                            }
+                            Player.STATE_READY -> {
+                                isBuffering.value = false
+                            }
+                            Player.STATE_IDLE -> {
+                                isBuffering.value = false
+                                exoPlayer?.prepare()
+                            }
                         }
 
                     }
@@ -174,6 +184,9 @@ actual class VideoPlayerController {
                         super.onTimelineChanged(timeline, reason)
                     }
 
+                    override fun onPlayerError(error: PlaybackException) {
+                        Log.d("TAG", "onPlayerError: ${error.message}")
+                    }
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         super.onIsPlayingChanged(isPlaying)
@@ -429,9 +442,12 @@ actual class VideoPlayerController {
             if (!enabled) {
                 it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
                     .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true).build()
-
             }
         }
+    }
+
+    actual fun setVolumeLevel(volumeLevel: Float) {
+        exoPlayer?.volume = volumeLevel
     }
 
 }

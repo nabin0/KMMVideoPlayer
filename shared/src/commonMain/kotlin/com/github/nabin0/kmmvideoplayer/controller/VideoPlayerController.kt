@@ -65,4 +65,6 @@ expect class VideoPlayerController {
     fun getCurrentCC(): ClosedCaptionForTrackSelector
 
     fun setCCEnabled(enabled: Boolean)
+
+    fun setVolumeLevel(volumeLevel: Float)
 }

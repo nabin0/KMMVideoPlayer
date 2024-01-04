@@ -70,6 +70,7 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
     }
 
     val videoViewModifier = if (enableLandscapeMode) Modifier else modifier.fillMaxHeight(0.27f)
+
     Box(modifier = videoViewModifier.background(Color.Black)) {
 
         videoPlayerController.PlayerView(modifier = Modifier.fillMaxWidth().noRippleClickable {
@@ -95,10 +96,10 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
                 },
                 content = {
 
-                  VideoPreferencesBox(
-                      videoPlayerController  = videoPlayerController,
-                      modifier = Modifier.fillMaxSize()
-                  )
+                    VideoPreferencesBox(
+                        videoPlayerController = videoPlayerController,
+                        modifier = Modifier.fillMaxSize()
+                    )
 
 
                 },
