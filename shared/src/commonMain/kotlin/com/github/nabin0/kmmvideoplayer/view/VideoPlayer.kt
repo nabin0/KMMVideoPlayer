@@ -55,11 +55,11 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
     var showOverlay by remember { mutableStateOf(true) }
     var showCustomDialogBoxForVideoControls by remember { mutableStateOf(false) }
 
-    LaunchedEffect(showOverlay) {
-        yield()
-        delay(5000)
-        showOverlay = false
-    }
+//    LaunchedEffect(showOverlay) {
+//        yield()
+//        delay(5000)
+//        showOverlay = false
+//    }
 
 
     var enableLandscapeMode by remember { mutableStateOf(false) }
@@ -81,7 +81,7 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
             modifier = Modifier.matchParentSize(),
             videoPlayerController = videoPlayerController,
             showOverLay = showOverlay,
-            onClickOverlayToHide = { showOverlay = false },
+            onClickOverlayToHide = { showOverlay = true }, //Todo: change to false
             onToggleScreenOrientation = { enableLandscapeMode = !enableLandscapeMode },
             isLandscapeView = enableLandscapeMode,
             onClickShowPlaybackSpeedControls = {

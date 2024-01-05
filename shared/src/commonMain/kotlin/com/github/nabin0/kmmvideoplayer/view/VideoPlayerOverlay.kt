@@ -68,7 +68,7 @@ import kotlinx.coroutines.yield
 fun BoxScope.VideoPlayerOverlay(
     modifier: Modifier = Modifier,
     videoPlayerController: VideoPlayerController,
-    showOverLay: Boolean = false,
+    showOverLay: Boolean = true, // TODO: Change t0 false
     onClickOverlayToHide: () -> Unit,
     onToggleScreenOrientation: () -> Unit,
     isLandscapeView: Boolean,
@@ -122,8 +122,7 @@ fun BoxScope.VideoPlayerOverlay(
                 onProgressValueChanged = { videoPlayerController.seekTo(millis = it.toLong()) },
                 modifier = Modifier.fillMaxWidth()
             )
-            println("total duration $videoDuration current $currentPosition")
-
+            // println("total duration $videoDuration current $currentPosition")
         }
     }
 }

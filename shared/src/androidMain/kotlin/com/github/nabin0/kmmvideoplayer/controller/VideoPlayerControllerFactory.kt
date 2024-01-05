@@ -7,11 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 
 actual class VideoPlayerControllerFactory {
 
-    @Composable
     actual fun createVideoPlayer(): VideoPlayerController {
-        val activity = LocalContext.current as ComponentActivity
-        return remember(Unit) {
-            VideoPlayerController()
-        }
+        return VideoPlayerController()
     }
 }
