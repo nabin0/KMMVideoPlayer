@@ -8,38 +8,40 @@ import androidx.compose.ui.interop.UIKitView
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
+import com.kmmvideoplayer.ObserverProtocol
 import kotlinx.cinterop.COpaquePointer
-import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.StableRef
 import kotlinx.cinterop.cValue
-import kotlinx.cinterop.nativeHeap
 import kotlinx.coroutines.flow.MutableStateFlow
 import platform.AVFoundation.AVPlayer
+import platform.AVFoundation.AVPlayerItemDidPlayToEndTimeNotification
 import platform.AVFoundation.AVPlayerLayer
 import platform.AVFoundation.AVPlayerTimeControlStatusPlaying
-import platform.AVFoundation.AVURLAsset
-import platform.AVFoundation.AVURLAssetMeta
+import platform.AVFoundation.addPeriodicTimeObserverForInterval
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.currentTime
 import platform.AVFoundation.duration
 import platform.AVFoundation.pause
 import platform.AVFoundation.play
+import platform.AVFoundation.removeTimeObserver
 import platform.AVFoundation.timeControlStatus
 import platform.AVKit.AVPlayerViewController
 import platform.CoreGraphics.CGRect
 import platform.CoreMedia.CMTime
 import platform.CoreMedia.CMTimeGetSeconds
-import platform.Foundation.NSKeyValueObservingOptions
+import platform.CoreMedia.CMTimeMakeWithSeconds
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
-import platform.Foundation.addObserver
-import platform.Foundation.observeValueForKeyPath
 import platform.QuartzCore.CATransaction
 import platform.QuartzCore.kCATransactionDisableActions
 import platform.UIKit.UIView
-import platform.posix.alloca
-import kotlin.native.internal.NativePtr
+import platform.darwin.Float64
+import platform.darwin.NSEC_PER_SEC
+import platform.darwin.NSObject
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 actual class VideoPlayerController {
     private var avPlayer: AVPlayer? = null
@@ -54,18 +56,59 @@ actual class VideoPlayerController {
         MutableStateFlow(null)
 
 
+    private lateinit var timeObserver: Any
+
+    @OptIn(ExperimentalForeignApi::class)
+    private val observer: (CValue<CMTime>) -> Unit = { time: CValue<CMTime> ->
+        println("something observed")
+        // isBuffering = avPlayer?.currentItem?.isPlaybackLikelyToKeepUp() != true
+        isPlaying.value = avPlayer?.timeControlStatus == AVPlayerTimeControlStatusPlaying
+        val rawTime: Float64 = CMTimeGetSeconds(time)
+        val parsedTime = rawTime.toDuration(DurationUnit.SECONDS).inWholeSeconds
+        //currentTime = parsedTime
+        if (avPlayer?.currentItem != null) {
+            // val cmTime = CMTimeGetSeconds(avPlayer.currentItem!!.duration)
+            // duration = if (cmTime.isNaN()) 0 else cmTime.toDuration(DurationUnit.SECONDS).inWholeSeconds
+        }
+    }
+
+
     @OptIn(ExperimentalForeignApi::class)
     @Composable
     actual fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit) {
         val url =
-            "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
-        avPlayer = remember { AVPlayer(uRL = NSURL.URLWithString(url)!!) }
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+         avPlayer = remember { AVPlayer(uRL = NSURL.URLWithString(url)!!) }
+
+       // avPlayer = AVPlayer()
+
+
+
+        if (avPlayer != null) {
+            println("avplayer is not null")
+        }
+
 
     }
 
 
     @OptIn(ExperimentalForeignApi::class)
-    fun observeTimeControlStatus(player: AVPlayer, onChange: (Int) -> Unit){
+    private fun startTimeObserver() {
+        val interval = CMTimeMakeWithSeconds(1.0, NSEC_PER_SEC.toInt())
+        timeObserver = avPlayer?.addPeriodicTimeObserverForInterval(interval, null, observer)!!
+        NSNotificationCenter.defaultCenter.addObserverForName(
+            name = AVPlayerItemDidPlayToEndTimeNotification,
+            `object` = avPlayer?.currentItem,
+            queue = NSOperationQueue.mainQueue,
+            usingBlock = {
+                // next()
+            }
+        )
+    }
+
+
+    @OptIn(ExperimentalForeignApi::class)
+    fun observeTimeControlStatus(player: AVPlayer, onChange: (Int) -> Unit) {
 
 
 //        val valobserverContext = nativeHeap.alloc<COpaquePointerVar>().apply {
@@ -94,6 +137,8 @@ actual class VideoPlayerController {
         avPlayerViewController.player = avPlayer
         avPlayerViewController.showsPlaybackControls = false
 
+         startTimeObserver()
+
         isPlaying.value = (avPlayer?.timeControlStatus() == AVPlayerTimeControlStatusPlaying)
 
         playerLayer.player = avPlayer
@@ -118,7 +163,8 @@ actual class VideoPlayerController {
                 avPlayer?.play()
                 avPlayerViewController.player!!.play()
             },
-            modifier = Modifier.fillMaxSize())
+            modifier = Modifier.fillMaxSize()
+        )
 
     }
 
@@ -153,13 +199,13 @@ actual class VideoPlayerController {
     }
 
     actual fun play() {
-        isPlaying.value = true
+        //isPlaying.value = true
         avPlayer?.play()
     }
 
     actual fun pause() {
-        isPlaying.value = false
-         avPlayer?.pause()
+        // isPlaying.value = false
+        avPlayer?.pause()
     }
 
     actual fun seekTo(millis: Long) {
@@ -172,12 +218,13 @@ actual class VideoPlayerController {
         val currentTimInMillis = CMTimeGetSeconds(currentTime) * 1000
 
         // TODO: optimize this
-        val durationInMillis = CMTimeGetSeconds(avPlayer?.currentItem?.duration() ?: defaultCMTime) * 1000
+        val durationInMillis =
+            CMTimeGetSeconds(avPlayer?.currentItem?.duration() ?: defaultCMTime) * 1000
         mediaDuration.value = durationInMillis.toLong()
 
         //print("currentTime $currentTimInMillis duration $durationInMillis \n")
         isPlaying.value = (avPlayer?.timeControlStatus() == AVPlayerTimeControlStatusPlaying)
-        println("is playing${isPlaying.value}")
+        // println("is playing${isPlaying.value}")
 
         return currentTimInMillis.toLong()
 
@@ -188,6 +235,8 @@ actual class VideoPlayerController {
     }
 
     actual fun stop() {
+        if (::timeObserver.isInitialized) avPlayer?.removeTimeObserver(timeObserver)
+
     }
 
     actual fun playWhenReady(boolean: Boolean) {
@@ -232,4 +281,20 @@ actual class VideoPlayerController {
     actual fun setVolumeLevel(volumeLevel: Float) {
     }
 
+
+}
+
+@OptIn(ExperimentalForeignApi::class)
+class VideoObserver : ObserverProtocol, NSObject() {
+    override fun observeValueForKeyPath(
+        keyPath: String?,
+        ofObject: Any?,
+        change: Map<Any?, *>?,
+        context: COpaquePointer?
+    ) {
+        println("keyPath $keyPath")
+        println("ofObject $ofObject")
+        println("change $change")
+        println("context $context")
+    }
 }

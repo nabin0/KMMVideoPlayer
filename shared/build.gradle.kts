@@ -1,4 +1,5 @@
 import org.jetbrains.compose.ExperimentalComposeLibrary
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -16,8 +17,18 @@ kotlin {
         }
     }
     iosX64()
-    iosArm64()
+//    iosArm64()
     iosSimulatorArm64()
+
+    configure(targets){
+        if (this is KotlinNativeTarget && konanTarget.family.isAppleFamily){
+            compilations.getByName("main").cinterops.create("observer"){
+                // defFile(project.file("../nativeMain/observer.def"))
+                packageName("com.kmmvideoplayer")
+            }
+        }
+    }
+
 
     cocoapods {
         summary = "Some description for the Shared Module"
