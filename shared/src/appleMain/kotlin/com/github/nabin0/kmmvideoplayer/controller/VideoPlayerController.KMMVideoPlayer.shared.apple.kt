@@ -1,9 +1,12 @@
 package com.github.nabin0.kmmvideoplayer.controller
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.interop.UIKitView
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
@@ -19,6 +22,7 @@ import platform.AVFoundation.AVPlayerItem
 import platform.AVFoundation.AVPlayerLayer
 import platform.AVFoundation.AVPlayerTimeControlStatusPlaying
 import platform.AVFoundation.addPeriodicTimeObserverForInterval
+import platform.AVFoundation.closedCaptionDisplayEnabled
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.currentTime
 import platform.AVFoundation.duration
@@ -26,15 +30,19 @@ import platform.AVFoundation.isPlaybackLikelyToKeepUp
 import platform.AVFoundation.pause
 import platform.AVFoundation.play
 import platform.AVFoundation.playImmediatelyAtRate
+import platform.AVFoundation.preferredPeakBitRate
+import platform.AVFoundation.preferredPeakBitRateForExpensiveNetworks
 import platform.AVFoundation.removeTimeObserver
 import platform.AVFoundation.replaceCurrentItemWithPlayerItem
 import platform.AVFoundation.seekToTime
 import platform.AVFoundation.setDefaultRate
 import platform.AVFoundation.setPreferredMaximumResolution
 import platform.AVFoundation.setRate
+import platform.AVFoundation.setVolume
 import platform.AVFoundation.timeControlStatus
 import platform.AVKit.AVPlayerViewController
 import platform.CoreGraphics.CGRect
+import platform.CoreGraphics.CGSize
 import platform.CoreGraphics.CGSizeMake
 import platform.CoreMedia.CMTime
 import platform.CoreMedia.CMTimeGetSeconds
@@ -54,11 +62,16 @@ actual class VideoPlayerController {
 
     private val videoList: MutableList<AVPlayerItem> = mutableListOf()
     private var currentVideoItemIndex: Int? = null
+    private var currentVideoItem: AVPlayerItem? = null
+
+    private var currentSelectedVideoQuality =
+        VideoQuality(index = -1, value = "Auto", resolutionKey = -1, height = null, width = null)
+
 
     //val url = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
     //private val avPlayerItem = AVPlayerItem(uRL = NSURL.URLWithString(url)!!)
 
-    actual val mediaDuration: MutableStateFlow<Long> = MutableStateFlow(0L)
+    actual val mediaDuration: MutableStateFlow<Long> = MutableStateFlow(110L)
     actual val isPlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
     actual val isBuffering: MutableStateFlow<Boolean> = MutableStateFlow(false)
     actual val listOfVideoResolutions: MutableStateFlow<List<VideoQuality>?> =
@@ -99,6 +112,11 @@ actual class VideoPlayerController {
     }
 
 
+    init {
+        setVideoQualityOptions()
+    }
+
+
 //    "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
 //    "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
 //    "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
@@ -113,13 +131,12 @@ actual class VideoPlayerController {
     @OptIn(ExperimentalForeignApi::class)
     @Composable
     actual fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit) {
-        // val url = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        val url =
+            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
 
-//         avPlayer = remember { AVPlayer(uRL = NSURL.URLWithString(url)!!) }
+        avPlayer = remember { AVPlayer(uRL = NSURL.URLWithString(url)!!) }
 //
-        avPlayer = AVPlayer()
-        // avPlayer?.replaceCurrentItemWithPlayerItem(avPlayerItem)
-
+//        avPlayer = remember{ AVPlayer() }
     }
 
 
@@ -175,6 +192,9 @@ actual class VideoPlayerController {
         playerLayer.player = avPlayer
         // Use a UIKitView to integrate with your existing UIKit views
         UIKitView(
+            modifier = modifier.fillMaxSize().background(Color.Red).clickable {
+                println("kljadksjfhkdshfkds")
+            },
             factory = {
                 // Create a UIView to hold the AVPlayerLayer
                 val playerContainer = UIView()
@@ -183,7 +203,7 @@ actual class VideoPlayerController {
                     avPlayer?.play()
                     avPlayerViewController.player!!.play()
                 }
-
+                avPlayer?.closedCaptionDisplayEnabled = false
                 isBuffering.value = true
                 // Return the playerContainer as the root UIView
                 playerContainer
@@ -197,9 +217,8 @@ actual class VideoPlayerController {
                 CATransaction.commit()
             },
             update = { view ->
+            }
 
-            },
-            modifier = Modifier.fillMaxSize()
         )
 
     }
@@ -299,6 +318,7 @@ actual class VideoPlayerController {
         // TODO: add separate fun to play media by index
 
         avPlayer?.replaceCurrentItemWithPlayerItem(videoList[0])
+        currentVideoItem = videoList[0]
         currentVideoItemIndex = 0
 
     }
@@ -309,7 +329,10 @@ actual class VideoPlayerController {
             if (it < videoList.size - 1) {
                 val nextVideoIndex = it + 1
                 currentVideoItemIndex = nextVideoIndex
+                currentVideoItem = videoList[nextVideoIndex]
                 avPlayer?.replaceCurrentItemWithPlayerItem(videoList[nextVideoIndex])
+                //avPlayer?.closedCaptionDisplayEnabled = true
+
             }
         }
 
@@ -320,6 +343,7 @@ actual class VideoPlayerController {
             if (it > 0) {
                 val nextVideoIndex = it - 1
                 currentVideoItemIndex = nextVideoIndex
+                currentVideoItem = videoList[nextVideoIndex]
                 avPlayer?.replaceCurrentItemWithPlayerItem(videoList[nextVideoIndex])
             }
         }
@@ -339,41 +363,108 @@ actual class VideoPlayerController {
     }
 
     actual fun getCurrentVideoStreamingQuality(): VideoQuality {
-        return VideoQuality(0, "144", 1, null)
+        return currentSelectedVideoQuality
     }
 
     @OptIn(ExperimentalForeignApi::class)
     actual fun setSpecificVideoQuality(videoQuality: VideoQuality) {
-        val size144 = CGSizeMake(width = 144.0, height = 256.0)
-        val size240 = CGSizeMake(width = 240.0, height = 426.0)
-        val size360 = CGSizeMake(width = 360.0, height = 640.0)
-        val size480 = CGSizeMake(width = 480.0, height = 854.0)
-        val size720 = CGSizeMake(width = 720.0, height = 1280.0)
-        val size1080 = CGSizeMake(width = 1080.0, height = 1920.0)
-
         //avPlayerItem.setPreferredPeakBitRate(1356000.0)
-        currentVideoItemIndex?.let {
-            videoList[it].setPreferredMaximumResolution(size144)
+        getCzSizeFromVideoQuality(videoQuality)?.let {
+            currentVideoItem?.setPreferredMaximumResolution(it)
+            currentSelectedVideoQuality = videoQuality
         }
     }
 
-    private fun getCzSizeFromVideoQuality(videoQuality: VideoQuality) {
-
+    @OptIn(ExperimentalForeignApi::class)
+    private fun getCzSizeFromVideoQuality(videoQuality: VideoQuality): CValue<CGSize>? {
+        return if (videoQuality.width != null && videoQuality.height != null)
+            CGSizeMake(width = videoQuality.width * 1.0, videoQuality.height * 1.0)
+        else {
+            currentVideoItem?.preferredPeakBitRate = 0.0
+            currentSelectedVideoQuality = VideoQuality(
+                index = -1,
+                value = "Auto",
+                resolutionKey = -1,
+                height = null,
+                width = null
+            )
+            null
+        }
     }
 
     actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
+
     }
 
     actual fun getCurrentCC(): ClosedCaptionForTrackSelector {
+        // https://developer.apple.com/videos/play/wwdc2020/10655/
         TODO("Not yet implemented")
     }
 
     actual fun setCCEnabled(enabled: Boolean) {
+        avPlayer?.closedCaptionDisplayEnabled = enabled
     }
 
     actual fun setVolumeLevel(volumeLevel: Float) {
+        avPlayer?.setVolume(volumeLevel)
     }
 
+
+    private fun setVideoQualityOptions() {
+        // Try- getting value of available resolution from hls manifest
+        val videoQualitySelectorOptions = listOf(
+            VideoQuality(
+                index = -1,
+                value = "Auto",
+                resolutionKey = -1,
+                width = null,
+                height = null
+            ),
+            VideoQuality(
+                index = 0,
+                value = "144 p",
+                resolutionKey = -1,
+                width = 144f,
+                height = 256f
+            ),
+            VideoQuality(
+                index = 1,
+                value = "240 p",
+                resolutionKey = -1,
+                width = 240f,
+                height = 426f
+            ),
+            VideoQuality(
+                index = 2,
+                value = "360 p",
+                resolutionKey = -1,
+                width = 360f,
+                height = 640f
+            ),
+            VideoQuality(
+                index = 3,
+                value = "480 p",
+                resolutionKey = -1,
+                width = 480f,
+                height = 854f
+            ),
+            VideoQuality(
+                index = 4,
+                value = "720 p",
+                resolutionKey = -1,
+                width = 720f,
+                height = 1280f
+            ),
+            VideoQuality(
+                index = 5,
+                value = "1080 p",
+                resolutionKey = -1,
+                width = 1080f,
+                height = 1920f
+            ),
+        )
+        listOfVideoResolutions.value = videoQualitySelectorOptions
+    }
 
 }
 

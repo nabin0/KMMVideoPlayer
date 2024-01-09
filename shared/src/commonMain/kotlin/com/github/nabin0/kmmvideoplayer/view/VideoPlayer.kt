@@ -1,11 +1,15 @@
 package com.github.nabin0.kmmvideoplayer.view
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,22 +76,34 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
     val videoViewModifier = if (enableLandscapeMode) Modifier else modifier.fillMaxHeight(0.27f)
 
     Box(modifier = videoViewModifier.background(Color.Black)) {
+            videoPlayerController.PlayerView(modifier = Modifier.fillMaxWidth().noRippleClickable {
+                showOverlay = true
+                println("aaaaaaa")
+            }, useDefaultController = false)
 
-        videoPlayerController.PlayerView(modifier = Modifier.fillMaxWidth().noRippleClickable {
-            showOverlay = true
-        }, useDefaultController = false)
-
-        VideoPlayerOverlay(
-            modifier = Modifier.matchParentSize(),
-            videoPlayerController = videoPlayerController,
-            showOverLay = showOverlay,
-            onClickOverlayToHide = { showOverlay = true }, //Todo: change to false
-            onToggleScreenOrientation = { enableLandscapeMode = !enableLandscapeMode },
-            isLandscapeView = enableLandscapeMode,
-            onClickShowPlaybackSpeedControls = {
-                showCustomDialogBoxForVideoControls = true
+        if(showOverlay){
+            Column(Modifier.fillMaxSize(0.8f).background(Color.Red).clickable {
+                showOverlay = false
+            }) {
+                Text("djkfdhfjkad")
             }
-        )
+        }
+
+
+//        VideoPlayerOverlay(
+//            modifier = Modifier.matchParentSize(),
+//            videoPlayerController = videoPlayerController,
+//            showOverLay = showOverlay,
+//            onClickOverlayToHide = {
+//                println("wwwwwwwwwww")
+//                showOverlay = false
+//            },
+//            onToggleScreenOrientation = { enableLandscapeMode = !enableLandscapeMode },
+//            isLandscapeView = enableLandscapeMode,
+//            onClickShowPlaybackSpeedControls = {
+//                showCustomDialogBoxForVideoControls = true
+//            }
+//        )
 
         if (showCustomDialogBoxForVideoControls) {
             CustomDialogBox(
@@ -95,12 +111,10 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
                     showCustomDialogBoxForVideoControls = false
                 },
                 content = {
-
                     VideoPreferencesBox(
                         videoPlayerController = videoPlayerController,
                         modifier = Modifier.fillMaxSize()
                     )
-
 
                 },
                 modifier = Modifier.padding(horizontal = 30.dp, vertical = 16.dp).fillMaxSize()
@@ -108,4 +122,21 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
             )
         }
     }
+}
+
+
+@Composable
+fun test() {
+    var a by remember { mutableStateOf(false) }
+
+    Column {
+        Text("kdjakhsdkhd" , Modifier.clickable { 
+            a = !a
+        })
+        if (a) {
+            Text("djakljsijelnkdnfadfiodfadgsd")
+        }
+        
+    }
+
 }

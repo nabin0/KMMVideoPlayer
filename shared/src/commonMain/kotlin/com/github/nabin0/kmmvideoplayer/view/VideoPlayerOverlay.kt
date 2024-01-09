@@ -68,7 +68,7 @@ import kotlinx.coroutines.yield
 fun BoxScope.VideoPlayerOverlay(
     modifier: Modifier = Modifier,
     videoPlayerController: VideoPlayerController,
-    showOverLay: Boolean = true, // TODO: Change t0 false
+    showOverLay: Boolean = false,
     onClickOverlayToHide: () -> Unit,
     onToggleScreenOrientation: () -> Unit,
     isLandscapeView: Boolean,
@@ -87,6 +87,7 @@ fun BoxScope.VideoPlayerOverlay(
     }
 
     if (showOverLay) {
+        println("sssssss")
         LaunchedEffect(Unit) {
             while (true) {
                 yield()

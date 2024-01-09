@@ -8,6 +8,7 @@ import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerControllerFactory
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaption
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.view.VideoPlayer
+import com.github.nabin0.kmmvideoplayer.view.test
 
 fun MainViewController() = ComposeUIViewController {
      val listOfVideoUrls = listOf(
@@ -27,16 +28,10 @@ fun MainViewController() = ComposeUIViewController {
                licenseUrl = "https://cwip-shaka-proxy.appspot.com/no_auth"
           ),
           VideoItem(
-               videoUrl = "https://hoichoihlsns.akamaized.net/vhoichoiindia2/Renditions/20190314/1552534964025_astey_ladies_ep_01_bengali/hls/1552534964025_astey_ladies_ep_01_bengali.m3u8?hdnts=exp=1703839751~acl=/vhoichoiindia2/Renditions/20190314/1552534964025_astey_ladies_ep_01_bengali/hls/*~hmac=1ca22a1d758267ca6e69d9d58500c4e662f14f85db0b1c0c950df894addc2d1f",
-               listOfClosedCaptions = listOf(
-                    ClosedCaption(
-                         subtitleLink = "https://cchoichoi.viewlift.com/2019/03/1552555747726_astey_ladies_ep_01_subs_final.srt",
-                         language = "en"
-                    )
-               )
+               videoUrl = "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8",
+
           )
      )
-
 
      VideoPlayer(
           modifier = Modifier.fillMaxWidth(),
