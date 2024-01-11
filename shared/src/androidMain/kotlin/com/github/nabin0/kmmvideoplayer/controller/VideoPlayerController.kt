@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Log
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
@@ -32,11 +34,12 @@ actual class VideoPlayerController {
 
     private var exoPlayer: ExoPlayer? = null
     private var currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
-    private var currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off")
+    private var currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = null)
 
     private var audioTrackGroup: Any? = null
     private var videoTrackGroup: Any? = null
     private var textTrackGroup: Any? = null
+    private var trackGroupsList: List<Tracks.Group>? =null
 
 
     actual fun getCurrentPlaybackSpeed(): Float = currentPlaybackSpeed
@@ -67,9 +70,11 @@ actual class VideoPlayerController {
                         super.onTracksChanged(tracks)
                         listOfVideoResolutions.value = null
                         listOfCC.value = null
-                        val videoResolutions: MutableList<VideoQuality> = mutableListOf()
-                        val subtitlesList = mutableStateListOf<ClosedCaptionForTrackSelector>()
 
+                        trackGroupsList = tracks.groups
+
+                        // GET AVAILABLE VIDEO RESOLUTIONS
+                        val videoResolutions: MutableList<VideoQuality> = mutableListOf()
                         for (trackGroup in tracks.groups) {
                             // Group level information.
                             val trackType = trackGroup.type
@@ -104,7 +109,7 @@ actual class VideoPlayerController {
 
                                 if (videoResolutions.isNotEmpty()) {
                                     videoResolutions.add(0, VideoQuality(-1, "Auto", -1))
-                                    videoResolutions?.distinctBy { it.resolutionKey }
+                                    videoResolutions.distinctBy { it.resolutionKey }
                                         ?.sortedByDescending { it.resolutionKey }
                                         ?.toMutableList()
                                         ?.takeIf { it.isNotEmpty() }
@@ -113,31 +118,100 @@ actual class VideoPlayerController {
                                     listOfVideoResolutions.value = null
                                 }
                             }
+                        }
 
-                            if (trackType == C.TRACK_TYPE_TEXT) {
-                                textTrackGroup = trackGroup
-                                subtitlesList.add(ClosedCaptionForTrackSelector(-1, "Off"))
+                        // GET AVAILABLE AUDIO TRACKS
+                        for (trackGroup in tracks.groups) {
+                            // Group level information.
+                            val trackType = trackGroup.type
+                            val trackInGroupIsSelected = trackGroup.isSelected
+                            val trackInGroupIsSupported = trackGroup.isSupported
+
+                            if (trackType == C.TRACK_TYPE_VIDEO) {
+                                videoTrackGroup = trackGroup
                                 for (i in 0 until trackGroup.length) {
                                     val isSelected = trackGroup.isTrackSelected(i)
                                     val trackFormat = trackGroup.getTrackFormat(i)
-                                    if (isSelected) {
-                                        currentSelectedCC = ClosedCaptionForTrackSelector(
-                                            index = i,
-                                            language = trackFormat.language.toString()
+                                    val trackIndex = i
+                                    val trackName = "${trackFormat.height} p"
+                                    val resolutionKey = trackFormat.height
+                                    if ((isSelected && currentSelectedVideoQuality.index != -1)) {
+                                        currentSelectedVideoQuality = VideoQuality(
+                                            trackIndex,
+                                            trackName,
+                                            resolutionKey
                                         )
                                     }
-                                    if (!subtitlesList.isEmpty())
-                                        subtitlesList.add(
-                                            ClosedCaptionForTrackSelector(
-                                                index = i,
-                                                language = trackFormat.language.toString()
-                                            )
+                                    if (trackGroup.length == 1)
+                                        currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
+                                    videoResolutions.add(
+                                        VideoQuality(
+                                            trackIndex,
+                                            trackName,
+                                            resolutionKey
                                         )
-                                    else listOfCC.value = null
+                                    )
                                 }
-                                listOfCC.value = subtitlesList
+
+                                if (videoResolutions.isNotEmpty()) {
+                                    videoResolutions.add(0, VideoQuality(-1, "Auto", -1))
+                                    videoResolutions.distinctBy { it.resolutionKey }
+                                        ?.sortedByDescending { it.resolutionKey }
+                                        ?.toMutableList()
+                                        ?.takeIf { it.isNotEmpty() }
+                                    listOfVideoResolutions.value = videoResolutions
+                                } else {
+                                    listOfVideoResolutions.value = null
+                                }
                             }
                         }
+
+
+                        // GET AVAILABLE SUBTITLE TRACKS
+                        val subtitlesList = mutableStateListOf<ClosedCaptionForTrackSelector>()
+                        subtitlesList.add(
+                            ClosedCaptionForTrackSelector(
+                                -1,
+                                "Off",
+                                name = null
+                            )
+                        )
+                        for (trackGroupIndex in 0 until tracks.groups.size) {
+                            val trackGroup = tracks.groups[trackGroupIndex]
+                            val trackType = trackGroup.type
+                            if (trackType == C.TRACK_TYPE_AUDIO) {
+                                textTrackGroup = trackGroup
+                                for (i in 0 until trackGroup.length) {
+                                    val isSelected = trackGroup.isTrackSelected(i)
+                                    val trackFormat = trackGroup.getTrackFormat(i)
+
+                                    Log.d("TAG", "onTracksChanged: $isSelected format $trackFormat, trackgroup $trackGroup")
+
+//                                    if (isSelected) {
+//                                        currentSelectedCC = ClosedCaptionForTrackSelector(
+//                                            index = trackGroupIndex,
+//                                            language = trackFormat.language.toString(),
+//                                            name = null
+//                                        )
+//                                    }
+//                                    subtitlesList.add(
+//                                        ClosedCaptionForTrackSelector(
+//                                            index = trackGroupIndex,
+//                                            language = trackFormat.language.toString(),
+//                                            name = trackFormat.language.toString()
+//                                        )
+//                                    )
+                                }
+                            }
+                        }
+                        subtitlesList.distinctBy {
+                            it.language
+                        }
+                        if (subtitlesList.isEmpty())
+                            listOfCC.value = null
+                        else
+                            listOfCC.value = subtitlesList
+
                     }
 
 
@@ -169,9 +243,11 @@ actual class VideoPlayerController {
                             Player.STATE_BUFFERING -> {
                                 isBuffering.value = true
                             }
+
                             Player.STATE_READY -> {
                                 isBuffering.value = false
                             }
+
                             Player.STATE_IDLE -> {
                                 isBuffering.value = false
                                 exoPlayer?.prepare()
@@ -407,8 +483,9 @@ actual class VideoPlayerController {
         return currentSelectedVideoQuality
     }
 
-    actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
+    @OptIn(UnstableApi::class) actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
         try {
+            val trackGroupTemp = trackGroupsList?.get(cc.index) ?:textTrackGroup
             currentSelectedCC = cc
 
             exoPlayer?.let {
@@ -416,7 +493,7 @@ actual class VideoPlayerController {
                     .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false).build()
                 if (cc.index == -1) {
                     it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
-                        .clearOverride((textTrackGroup as Tracks.Group).mediaTrackGroup).build()
+                        .clearOverride((trackGroupTemp as Tracks.Group).mediaTrackGroup).build()
                     setCCEnabled(false)
                     return
                 }
@@ -425,8 +502,8 @@ actual class VideoPlayerController {
                         .buildUpon()
                         .setOverrideForType(
                             TrackSelectionOverride(
-                                (textTrackGroup as Tracks.Group).mediaTrackGroup,
-                                cc.index
+                                (trackGroupTemp as Tracks.Group).mediaTrackGroup,
+                                0
                             )
                         ).build()
             }

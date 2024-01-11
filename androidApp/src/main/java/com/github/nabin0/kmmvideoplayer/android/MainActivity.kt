@@ -20,6 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val listOfVideoUrls = listOf(
+            VideoItem(videoUrl = "https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8"),
             VideoItem(
                 videoUrl = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
                 listOfClosedCaptions = listOf(

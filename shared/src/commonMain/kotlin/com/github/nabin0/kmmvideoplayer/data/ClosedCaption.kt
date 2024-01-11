@@ -7,5 +7,6 @@ data class ClosedCaption(
 
 data class ClosedCaptionForTrackSelector(
     val index: Int,
-    val language: String
+    val language: String,
+    val name: String?
 )

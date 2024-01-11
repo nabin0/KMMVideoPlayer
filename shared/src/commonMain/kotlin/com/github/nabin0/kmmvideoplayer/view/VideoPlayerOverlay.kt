@@ -87,7 +87,6 @@ fun BoxScope.VideoPlayerOverlay(
     }
 
     if (showOverLay) {
-        println("sssssss")
         LaunchedEffect(Unit) {
             while (true) {
                 yield()
@@ -123,7 +122,6 @@ fun BoxScope.VideoPlayerOverlay(
                 onProgressValueChanged = { videoPlayerController.seekTo(millis = it.toLong()) },
                 modifier = Modifier.fillMaxWidth()
             )
-            // println("total duration $videoDuration current $currentPosition")
         }
     }
 }
