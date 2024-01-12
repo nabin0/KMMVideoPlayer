@@ -53,10 +53,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
+import com.github.nabin0.kmmvideoplayer.data.AudioTrack
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
 import com.github.nabin0.kmmvideoplayer.utils.convertMillisToReadableTime
@@ -373,10 +375,12 @@ fun VideoPreferencesBox(
     modifier: Modifier = Modifier,
 ) {
     val videoQualitiesList by videoPlayerController.listOfVideoResolutions.collectAsState()
+    val audioTracksList by videoPlayerController.listOfAudioFormats.collectAsState()
 
     var selectedPreferenceOptionIndex by remember { mutableStateOf(0) }
     val ccList by videoPlayerController.listOfCC.collectAsState()
-    val preferenceOptions = remember { listOf("PlaybackSpeed", "Video Quality", "Closed Caption") }
+    val preferenceOptions =
+        remember { listOf("PlaybackSpeed", "Video Quality", "Closed Caption", "Audio Tracks") }
 
     Row(modifier = Modifier.fillMaxWidth().background(Color.Black)) {
         Surface(modifier = Modifier.weight(1f)) {
@@ -429,13 +433,23 @@ fun VideoPreferencesBox(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-            }else if(selectedPreferenceOptionIndex == 2){
-                if(!ccList.isNullOrEmpty()){
+            } else if (selectedPreferenceOptionIndex == 2) {
+                if (!ccList.isNullOrEmpty()) {
                     CCSelectorDialogBox(
                         ccList = ccList!!,
                         currentSelectedCC = videoPlayerController.getCurrentCC(),
-                        onItemSelected = {videoPlayerController.setSpecificCC(it)},
+                        onItemSelected = { videoPlayerController.setSpecificCC(it) },
                         modifier = Modifier.fillMaxWidth()
+                    )
+
+                }
+            } else if (selectedPreferenceOptionIndex == 3) {
+                if (!audioTracksList.isNullOrEmpty()) {
+                    AudioTrackSelectorBox(
+                        audioTrackList = audioTracksList!!,
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedAudioTrack = videoPlayerController.getCurrentSelectedAudioTrack(),
+                        onItemSelected = { videoPlayerController.setSpecificAudioTrack(it) },
                     )
 
                 }
@@ -553,6 +567,54 @@ fun CCSelectorDialogBox(
                     text = item.language,
                     style = textStyle.copy(textAlign = TextAlign.Start),
                     modifier = Modifier.weight(1f)
+                )
+
+            }
+        }
+    }
+}
+
+
+@Composable
+fun AudioTrackSelectorBox(
+    audioTrackList: List<AudioTrack>,
+    selectedAudioTrack: AudioTrack?,
+    onItemSelected: (AudioTrack) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var localSelectedAudioTrack by remember { mutableStateOf(selectedAudioTrack) }
+    LazyColumn(
+        modifier = modifier.fillMaxWidth().background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        itemsIndexed(items = audioTrackList) { index, item ->
+            Row(
+                modifier = Modifier.clickable {
+                    onItemSelected(item)
+                    localSelectedAudioTrack = item
+                }.fillMaxWidth().padding(vertical = 1.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val textStyle =
+                    if ((localSelectedAudioTrack?.index == item.index)
+                        && (localSelectedAudioTrack?.audioTrackGroupIndex == item.audioTrackGroupIndex))
+                        TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.Green
+                        )
+                    else TextStyle(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = item.language,
+                    style = textStyle.copy(textAlign = TextAlign.Start),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
             }

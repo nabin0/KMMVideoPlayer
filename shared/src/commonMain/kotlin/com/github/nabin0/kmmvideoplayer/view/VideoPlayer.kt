@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.utils.noRippleClickable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 
 @Composable
 fun VideoPlayer(
@@ -56,11 +59,11 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
     var showOverlay by remember { mutableStateOf(true) }
     var showCustomDialogBoxForVideoControls by remember { mutableStateOf(false) }
 
-//    LaunchedEffect(showOverlay) {
-//        yield()
-//        delay(5000)
-//        showOverlay = false
-//    }
+    LaunchedEffect(showOverlay) {
+        yield()
+        delay(5000)
+        showOverlay = false
+    }
 
 
     var enableLandscapeMode by remember { mutableStateOf(false) }
@@ -115,21 +118,4 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
             )
         }
     }
-}
-
-
-@Composable
-fun test() {
-    var a by remember { mutableStateOf(false) }
-
-    Column {
-        Text("kdjakhsdkhd" , Modifier.clickable { 
-            a = !a
-        })
-        if (a) {
-            Text("djakljsijelnkdnfadfiodfadgsd")
-        }
-        
-    }
-
 }

@@ -2,6 +2,7 @@ package com.github.nabin0.kmmvideoplayer.controller
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.github.nabin0.kmmvideoplayer.data.AudioTrack
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaption
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
@@ -15,7 +16,7 @@ expect class VideoPlayerController {
     val isBuffering: MutableStateFlow<Boolean>
 
     val listOfVideoResolutions: MutableStateFlow<List<VideoQuality>?>
-    val listOfAudioFormats: MutableStateFlow<List<String>?>
+    val listOfAudioFormats: MutableStateFlow<List<AudioTrack>?>
     val listOfCC: MutableStateFlow<List<ClosedCaptionForTrackSelector>?>
 
     @Composable
@@ -61,6 +62,9 @@ expect class VideoPlayerController {
     fun setSpecificVideoQuality(videoQuality: VideoQuality)
 
     fun setSpecificCC(cc: ClosedCaptionForTrackSelector)
+
+    fun setSpecificAudioTrack(audioTrack: AudioTrack)
+    fun getCurrentSelectedAudioTrack(): AudioTrack?
 
     fun getCurrentCC(): ClosedCaptionForTrackSelector
 
