@@ -3,10 +3,13 @@ import shared
 import SwiftUI
 
 struct ComposeView: UIViewControllerRepresentable {
+    
     func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {
     }
     
     func makeUIViewController(context: Context) -> some UIViewController {
+        
+    
         let videoItem: VideoItem?=VideoItem(videoUrl:"https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8", title: Optional.none, videoDescription: Optional.none, licenseUrl: Optional.none, listOfClosedCaptions:Optional.none)
         
         let listOfVideoItems = [
@@ -17,6 +20,8 @@ struct ComposeView: UIViewControllerRepresentable {
             VideoItem(videoUrl:"https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd", title: Optional.none, videoDescription: Optional.none, licenseUrl: "https://cwip-shaka-proxy.appspot.com/no_auth", listOfClosedCaptions:Optional.none),
             
         ]
-      return  MainViewControllerKt.VideoViewController(videoItem:Optional.none , listOfVideoUrls: listOfVideoItems)
+        return  MainViewControllerKt.VideoViewController(videoPlayerController:videoPlayerController,
+                                                         videoItem:Optional.none ,
+                                                         listOfVideoUrls: listOfVideoItems)
     }
 }

@@ -1,10 +1,29 @@
 import SwiftUI
 import shared
 
+let videoPlayerController = VideoPlayerControllerFactory().createVideoPlayer()
+
 struct ContentView: View {
+    
 	var body: some View {
-		ComposeView()
+        ComposeView()
+        HStack{
+            Button(action: {
+                videoPlayerController.pause()
+                
+                    }, label: {
+                        Text("Pause Video")
+                    })
+            
+            Button(action: {
+                videoPlayerController.play()
+                    }, label: {
+                        Text("Play Video")
+                    })
+        }
+       
 	}
+
 }
 
 struct ContentView_Previews: PreviewProvider {

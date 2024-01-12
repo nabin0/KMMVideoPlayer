@@ -79,141 +79,11 @@ actual class VideoPlayerController {
                         currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
                         currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = null)
                         currentSelectedAudioTrack = null
-
                         trackGroupsList = tracks.groups
 
-                        // GET AVAILABLE VIDEO RESOLUTIONS
-                        val videoResolutions: MutableList<VideoQuality> = mutableListOf()
-                        for (trackGroup in tracks.groups) {
-                            // Group level information.
-                            val trackType = trackGroup.type
-                            val trackInGroupIsSelected = trackGroup.isSelected
-                            val trackInGroupIsSupported = trackGroup.isSupported
-
-                            if (trackType == C.TRACK_TYPE_VIDEO) {
-                                videoTrackGroup = trackGroup
-                                for (i in 0 until trackGroup.length) {
-                                    val isSelected = trackGroup.isTrackSelected(i)
-                                    val trackFormat = trackGroup.getTrackFormat(i)
-                                    val trackIndex = i
-                                    val trackName = "${trackFormat.height} p"
-                                    val resolutionKey = trackFormat.height
-                                    if ((isSelected && currentSelectedVideoQuality.index != -1)) {
-                                        currentSelectedVideoQuality = VideoQuality(
-                                            trackIndex,
-                                            trackName,
-                                            resolutionKey
-                                        )
-                                    }
-                                    if (trackGroup.length == 1)
-                                        currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
-                                    videoResolutions.add(
-                                        VideoQuality(
-                                            trackIndex,
-                                            trackName,
-                                            resolutionKey
-                                        )
-                                    )
-                                }
-
-                                if (videoResolutions.isNotEmpty()) {
-                                    videoResolutions.add(0, VideoQuality(-1, "Auto", -1))
-                                    videoResolutions.distinctBy { it.resolutionKey }
-                                        ?.sortedByDescending { it.resolutionKey }
-                                        ?.toMutableList()
-                                        ?.takeIf { it.isNotEmpty() }
-                                    listOfVideoResolutions.value = videoResolutions
-                                } else {
-                                    listOfVideoResolutions.value = null
-                                }
-                            }
-                        }
-
-                        // GET AVAILABLE AUDIO TRACKS
-                        var audioTracks: MutableList<AudioTrack> = mutableListOf()
-                        for (trackGroupIndex in 0 until tracks.groups.size) {
-                            val trackGroup = tracks.groups[trackGroupIndex]
-                            val trackType = trackGroup.type
-                            val trackInGroupIsSelected = trackGroup.isSelected
-                            val trackInGroupIsSupported = trackGroup.isSupported
-                            if (trackType == C.TRACK_TYPE_AUDIO) {
-                                audioTrackGroup = trackGroup
-                                for (i in 0 until trackGroup.length) {
-                                    val isSelected = trackGroup.isTrackSelected(i)
-                                    val trackFormat = trackGroup.getTrackFormat(i)
-                                    val trackMetadata = trackFormat.metadata?.get(0) as HlsTrackMetadataEntry
-                                     val isSurround = trackMetadata.groupId == "surround"
-                                     val isStereo = trackMetadata.groupId == "stereo"
-
-                                    trackFormat.language?.let {
-                                        if (isSelected) {
-                                            currentSelectedAudioTrack = AudioTrack(
-                                                index = trackGroupIndex,
-                                                language = "${trackMetadata.name} ${trackMetadata.groupId}-$it",
-                                                name = trackFormat.language,
-                                                isStereo = isStereo,
-                                                isSurround = isSurround,
-                                                audioTrackGroupIndex = i
-                                            )
-                                        }
-                                        audioTracks.add(
-                                            AudioTrack(
-                                                index = trackGroupIndex,
-                                                language = "${trackMetadata.name} ${trackMetadata.groupId}-$it",
-                                                name = trackFormat.language,
-                                                isStereo = isStereo,
-                                                isSurround = isSurround,
-                                                audioTrackGroupIndex = i
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        listOfAudioFormats.value = audioTracks
-
-                        // GET AVAILABLE SUBTITLE TRACKS
-                        val subtitlesList = mutableStateListOf<ClosedCaptionForTrackSelector>()
-                        subtitlesList.add(
-                            ClosedCaptionForTrackSelector(
-                                -1,
-                                "Off",
-                                name = null
-                            )
-                        )
-                        for (trackGroupIndex in 0 until tracks.groups.size) {
-                            val trackGroup = tracks.groups[trackGroupIndex]
-                            val trackType = trackGroup.type
-                            if (trackType == C.TRACK_TYPE_TEXT) {
-                                textTrackGroup = trackGroup
-                                for (i in 0 until trackGroup.length) {
-                                    val isSelected = trackGroup.isTrackSelected(i)
-                                    val trackFormat = trackGroup.getTrackFormat(i)
-                                    if (isSelected) {
-                                        currentSelectedCC = ClosedCaptionForTrackSelector(
-                                            index = trackGroupIndex,
-                                            language = trackFormat.language.toString(),
-                                            name = null
-                                        )
-                                    }
-                                    subtitlesList.add(
-                                        ClosedCaptionForTrackSelector(
-                                            index = trackGroupIndex,
-                                            language = trackFormat.language.toString(),
-                                            name = trackFormat.language.toString()
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                        subtitlesList.distinctBy {
-                            it.language
-                        }
-                        if (subtitlesList.isEmpty())
-                            listOfCC.value = null
-                        else
-                            listOfCC.value = subtitlesList
+                        getAvailableVideoResolutions(tracks)
+                        getAvailableSubtitleTracks(tracks)
+                        getAvailableAudioTracks(tracks)
 
                     }
 
@@ -279,6 +149,161 @@ actual class VideoPlayerController {
 
         }
     }
+
+
+    private fun getAvailableVideoResolutions(tracks: Tracks){
+        try {
+            // GET AVAILABLE VIDEO RESOLUTIONS
+            val videoResolutions: MutableList<VideoQuality> = mutableListOf()
+            for (trackGroup in tracks.groups) {
+                // Group level information.
+                val trackType = trackGroup.type
+                val trackInGroupIsSelected = trackGroup.isSelected
+                val trackInGroupIsSupported = trackGroup.isSupported
+
+                if (trackType == C.TRACK_TYPE_VIDEO) {
+                    videoTrackGroup = trackGroup
+                    for (i in 0 until trackGroup.length) {
+                        val isSelected = trackGroup.isTrackSelected(i)
+                        val trackFormat = trackGroup.getTrackFormat(i)
+                        val trackIndex = i
+                        val trackName = "${trackFormat.height} p"
+                        val resolutionKey = trackFormat.height
+                        if ((isSelected && currentSelectedVideoQuality.index != -1)) {
+                            currentSelectedVideoQuality = VideoQuality(
+                                trackIndex,
+                                trackName,
+                                resolutionKey
+                            )
+                        }
+                        if (trackGroup.length == 1)
+                            currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
+                        videoResolutions.add(
+                            VideoQuality(
+                                trackIndex,
+                                trackName,
+                                resolutionKey
+                            )
+                        )
+                    }
+
+                    if (videoResolutions.isNotEmpty()) {
+                        videoResolutions.add(0, VideoQuality(-1, "Auto", -1))
+                        videoResolutions.distinctBy { it.resolutionKey }
+                            ?.sortedByDescending { it.resolutionKey }
+                            ?.toMutableList()
+                            ?.takeIf { it.isNotEmpty() }
+                        listOfVideoResolutions.value = videoResolutions
+                    } else {
+                        listOfVideoResolutions.value = null
+                    }
+                }
+            }
+
+        }catch (e: Exception){
+            e.printStackTrace()
+        }
+    }
+
+    private fun getAvailableSubtitleTracks(tracks: Tracks){
+        try {
+            val subtitlesList = mutableStateListOf<ClosedCaptionForTrackSelector>()
+            subtitlesList.add(
+                ClosedCaptionForTrackSelector(
+                    -1,
+                    "Off",
+                    name = null
+                )
+            )
+            for (trackGroupIndex in 0 until tracks.groups.size) {
+                val trackGroup = tracks.groups[trackGroupIndex]
+                val trackType = trackGroup.type
+                if (trackType == C.TRACK_TYPE_TEXT) {
+                    textTrackGroup = trackGroup
+                    for (i in 0 until trackGroup.length) {
+                        val isSelected = trackGroup.isTrackSelected(i)
+                        val trackFormat = trackGroup.getTrackFormat(i)
+                        if (isSelected) {
+                            currentSelectedCC = ClosedCaptionForTrackSelector(
+                                index = trackGroupIndex,
+                                language = trackFormat.language.toString(),
+                                name = null
+                            )
+                        }
+                        subtitlesList.add(
+                            ClosedCaptionForTrackSelector(
+                                index = trackGroupIndex,
+                                language = trackFormat.language.toString(),
+                                name = trackFormat.language.toString()
+                            )
+                        )
+                    }
+                }
+            }
+            subtitlesList.distinctBy {
+                it.language
+            }
+            if (subtitlesList.isEmpty())
+                listOfCC.value = null
+            else
+                listOfCC.value = subtitlesList
+
+        }catch (e:Exception){
+            e.printStackTrace()
+        }
+    }
+
+    @OptIn(UnstableApi::class) private fun getAvailableAudioTracks(tracks: Tracks){
+        try {
+            val audioTracks: MutableList<AudioTrack> = mutableListOf()
+            for (trackGroupIndex in 0 until tracks.groups.size) {
+                val trackGroup = tracks.groups[trackGroupIndex]
+                val trackType = trackGroup.type
+                val trackInGroupIsSelected = trackGroup.isSelected
+                val trackInGroupIsSupported = trackGroup.isSupported
+                if (trackType == C.TRACK_TYPE_AUDIO) {
+                    audioTrackGroup = trackGroup
+                    for (i in 0 until trackGroup.length) {
+                        val isSelected = trackGroup.isTrackSelected(i)
+                        val trackFormat = trackGroup.getTrackFormat(i)
+                        val trackMetadata = trackFormat.metadata?.get(0) as HlsTrackMetadataEntry
+                        val isSurround = trackMetadata.groupId == "surround"
+                        val isStereo = trackMetadata.groupId == "stereo"
+
+                        trackFormat.language?.let {
+                            if (isSelected) {
+                                currentSelectedAudioTrack = AudioTrack(
+                                    index = trackGroupIndex,
+                                    language = "${trackMetadata.name} ${trackMetadata.groupId}-$it",
+                                    name = trackFormat.language,
+                                    isStereo = isStereo,
+                                    isSurround = isSurround,
+                                    audioTrackGroupIndex = i
+                                )
+                            }
+                            audioTracks.add(
+                                AudioTrack(
+                                    index = trackGroupIndex,
+                                    language = "${trackMetadata.name} ${trackMetadata.groupId}-$it",
+                                    name = trackFormat.language,
+                                    isStereo = isStereo,
+                                    isSurround = isSurround,
+                                    audioTrackGroupIndex = i
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            listOfAudioFormats.value = audioTracks
+
+        }catch (e:Exception){
+            e.printStackTrace()
+        }
+    }
+
+
 
     actual fun prepare() {
         exoPlayer?.prepare()

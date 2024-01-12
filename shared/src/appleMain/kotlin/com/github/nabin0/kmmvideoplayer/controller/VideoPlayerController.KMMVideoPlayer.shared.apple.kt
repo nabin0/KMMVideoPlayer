@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
+import com.github.nabin0.kmmvideoplayer.data.AudioTrack
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
@@ -17,7 +18,6 @@ import platform.AVFoundation.AVMediaCharacteristicAudible
 import platform.AVFoundation.AVMediaCharacteristicLegible
 import platform.AVFoundation.AVMediaSelectionGroup
 import platform.AVFoundation.AVMediaSelectionOption
-import platform.AVFoundation.AVMediaTypeSubtitle
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItem
 import platform.AVFoundation.AVPlayerLayer
@@ -31,7 +31,6 @@ import platform.AVFoundation.duration
 import platform.AVFoundation.isClosedCaptionDisplayEnabled
 import platform.AVFoundation.isPlaybackLikelyToKeepUp
 import platform.AVFoundation.mediaSelectionGroupForMediaCharacteristic
-import platform.AVFoundation.mediaSelectionOptionsFromArray
 import platform.AVFoundation.pause
 import platform.AVFoundation.play
 import platform.AVFoundation.playImmediatelyAtRate
@@ -40,8 +39,6 @@ import platform.AVFoundation.removeTimeObserver
 import platform.AVFoundation.replaceCurrentItemWithPlayerItem
 import platform.AVFoundation.seekToTime
 import platform.AVFoundation.selectMediaOption
-import platform.AVFoundation.selectMediaOptionAutomaticallyInMediaSelectionGroup
-import platform.AVFoundation.selectedMediaOptionInMediaSelectionGroup
 import platform.AVFoundation.setDefaultRate
 import platform.AVFoundation.setPreferredMaximumResolution
 import platform.AVFoundation.setRate
@@ -54,17 +51,30 @@ import platform.CoreGraphics.CGSizeMake
 import platform.CoreMedia.CMTime
 import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeMakeWithSeconds
-import platform.Foundation.NSLocale
+import platform.Foundation.NSException
 import platform.Foundation.NSURL
+import platform.Foundation.setValue
 import platform.QuartzCore.CATransaction
 import platform.QuartzCore.kCATransactionDisableActions
+import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationDelegateProtocol
+import platform.UIKit.UIDevice
+import platform.UIKit.UIDeviceOrientation
+import platform.UIKit.UIInterfaceOrientation
+import platform.UIKit.UIInterfaceOrientationIsPortrait
+import platform.UIKit.UIInterfaceOrientationLandscapeLeft
 import platform.UIKit.UIInterfaceOrientationMaskLandscape
+import platform.UIKit.UIInterfaceOrientationPortrait
+import platform.UIKit.UIModalPresentationFullScreen
+import platform.UIKit.UIScreen
 import platform.UIKit.UIView
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindowSceneGeometryPreferencesIOS
-import platform.UIKit.accessibilityLanguage
+import platform.UIKit.attemptRotationToDeviceOrientation
+import platform.UIKit.supportedInterfaceOrientations
 import platform.darwin.NSEC_PER_SEC
 import platform.darwin.NSObject
+import kotlin.native.concurrent.isFrozen
 
 actual class VideoPlayerController {
     private var avPlayer: AVPlayer? = null
@@ -92,7 +102,7 @@ actual class VideoPlayerController {
     actual val isBuffering: MutableStateFlow<Boolean> = MutableStateFlow(false)
     actual val listOfVideoResolutions: MutableStateFlow<List<VideoQuality>?> =
         MutableStateFlow(null)
-    actual val listOfAudioFormats: MutableStateFlow<List<String>?> = MutableStateFlow(null)
+    actual val listOfAudioFormats: MutableStateFlow<List<AudioTrack>?> = MutableStateFlow(null)
     actual val listOfCC: MutableStateFlow<List<ClosedCaptionForTrackSelector>?> =
         MutableStateFlow(null)
 
@@ -131,7 +141,6 @@ actual class VideoPlayerController {
         setVideoQualityOptions()
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     @Composable
     actual fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit) {
         avPlayer = remember { AVPlayer() }
@@ -187,61 +196,6 @@ actual class VideoPlayerController {
 
         playerLayer.player = avPlayer
 
-//        var actualOrientation by remember {
-//            mutableStateOf(
-//                AVCaptureVideoOrientationPortrait
-//            )
-//        }
-//        DisposableEffect(Unit) {
-//            class OrientationListener : NSObject() {
-//                @Suppress("UNUSED_PARAMETER")
-//                @ObjCAction
-//                fun orientationDidChange(arg: NSNotification) {
-//                    // val cameraConnection = avPlayerViewController.interfaceOrientation
-//                    if (avPlayerViewController != null) {
-//                        actualOrientation = when (UIDevice.currentDevice.orientation) {
-//                            UIDeviceOrientation.UIDeviceOrientationPortrait ->
-//                                AVCaptureVideoOrientationPortrait
-//
-//                            UIDeviceOrientation.UIDeviceOrientationLandscapeLeft ->
-//                                AVCaptureVideoOrientationLandscapeRight
-//
-//                            UIDeviceOrientation.UIDeviceOrientationLandscapeRight ->
-//                                AVCaptureVideoOrientationLandscapeLeft
-//
-//                            UIDeviceOrientation.UIDeviceOrientationPortraitUpsideDown ->
-//                                AVCaptureVideoOrientationPortrait
-//
-//                            else -> avPlayerViewController.interfaceOrientation
-//                        }
-//                        // avPlayerViewController.supportedInterfaceOrientations =
-//                            UIInterfaceOrientationMaskAll
-//                    }
-////                    capturePhotoOutput.connectionWithMediaType(AVMediaTypeVideo)
-////                        ?.videoOrientation = actualOrientation
-//                }
-//            }
-
-//            val listener = OrientationListener()
-//            val notificationName = platform.UIKit.UIDeviceOrientationDidChangeNotification
-//            NSNotificationCenter.defaultCenter.addObserver(
-//                observer = listener,
-//                selector = NSSelectorFromString(
-//                    OrientationListener::orientationDidChange.name + ":"
-//                ),
-//                name = notificationName,
-//                `object` = null
-//            )
-//            onDispose {
-//                NSNotificationCenter.defaultCenter.removeObserver(
-//                    observer = listener,
-//                    name = notificationName,
-//                    `object` = null
-//                )
-//            }
-//        }
-
-
         UIKitView(
             interactive = true,
             modifier = modifier,
@@ -281,26 +235,49 @@ actual class VideoPlayerController {
 
     }
 
+    private fun setDeviceOrientation(orientationValue: Long) {
+        UIDevice.currentDevice.setValue(orientationValue, "orientation")
+        UIViewController.attemptRotationToDeviceOrientation()
+    }
     @Composable
     actual fun EnableLandscapeScreenMode() {
+
+        try {
+            val appDelegate = UIApplication.sharedApplication.delegate
+            val window = appDelegate?.window
+//            val appDelegate = UIApplication.shared.delegate as? AppDelegate
+//            val window = appDelegate?.window
+//            window?.rootViewController?.set = .mask.toInt()
+            val orientation = UIDevice.currentDevice.orientation
+
+            if (orientation == UIDeviceOrientation.UIDeviceOrientationPortrait || orientation == UIDeviceOrientation.UIDeviceOrientationPortraitUpsideDown) {
+                setDeviceOrientation(UIInterfaceOrientationLandscapeLeft)
+            } else {
+                setDeviceOrientation(UIInterfaceOrientationPortrait)
+            }
+        }catch (e: Exception){
+            e.printStackTrace()
+        }
+
+
         // val windowScreen =
         // UIDevice.currentDevice.or
 //        var currentOrientation: UIInterfaceOrientation = UIApplication.sharedApplication.statusBarOrientation
 //        var value = UIInterfaceOrientationLandscapeLeft
 //        UIDevice.currentDevice.setValue(value, forKey: "orientation")
-        val win = UIViewController().view.window?.windowScene
-
-        win?.let {
-            //if (win.interfaceOrientation == UIInterfaceOrientationPortrait) {
-            win.requestGeometryUpdateWithPreferences(
-                UIWindowSceneGeometryPreferencesIOS(
-                    UIInterfaceOrientationMaskLandscape
-                )
-            ) {
-                println("error: $it")
-            }
-            //}
-        }
+//        val win = UIViewController().view.window?.windowScene
+//
+//        win?.let {
+//            //if (win.interfaceOrientation == UIInterfaceOrientationPortrait) {
+//            win.requestGeometryUpdateWithPreferences(
+//                UIWindowSceneGeometryPreferencesIOS(
+//                    UIInterfaceOrientationMaskLandscape
+//                )
+//            ) {
+//                println("error: $it")
+//            }
+//            //}
+//        }
     }
 
     @Composable
@@ -356,10 +333,13 @@ actual class VideoPlayerController {
 
 
     actual fun releasePlayer() {
+
     }
 
     actual fun stop() {
         if (::timeObserver.isInitialized) avPlayer?.removeTimeObserver(timeObserver)
+        avPlayer?.replaceCurrentItemWithPlayerItem(null)
+
     }
 
     actual fun playWhenReady(boolean: Boolean) {
@@ -367,6 +347,7 @@ actual class VideoPlayerController {
     }
 
     actual fun addPlayList(listOfVideos: List<VideoItem>) {
+        videoList.addAll(listOfVideos)
     }
 
     actual fun setPlayList(listOfVideos: List<VideoItem>) {
@@ -473,7 +454,7 @@ actual class VideoPlayerController {
                     val option = audioTrackOptions[i] as AVMediaSelectionOption
                     option.extendedLanguageTag?.let { audioSelectorList.add(it) }
                 }
-                listOfAudioFormats.value = audioSelectorList
+                // listOfAudioFormats.value = audioSelectorList
             }
 
 
@@ -633,6 +614,14 @@ actual class VideoPlayerController {
             ),
         )
         listOfVideoResolutions.value = videoQualitySelectorOptions
+    }
+
+    actual fun setSpecificAudioTrack(audioTrack: AudioTrack) {
+
+    }
+
+    actual fun getCurrentSelectedAudioTrack(): AudioTrack? {
+        return null
     }
 
 }
