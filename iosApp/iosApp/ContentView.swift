@@ -6,23 +6,24 @@ let videoPlayerController = VideoPlayerControllerFactory().createVideoPlayer()
 struct ContentView: View {
     
 	var body: some View {
-        ComposeView()
-        HStack{
-            Button(action: {
-                videoPlayerController.pause()
-                
-                    }, label: {
-                        Text("Pause Video")
-                    })
-            
-            Button(action: {
-                videoPlayerController.play()
-                    }, label: {
-                        Text("Play Video")
-                    })
-        }
+        ComposeView().edgesIgnoringSafeArea(.all).statusBarHidden(true)
+//         HStack{
+//             Button(action: {
+//                 videoPlayerController.pause()
+//
+//                     }, label: {
+//                         Text("Pause Video")
+//                     })
+//
+//             Button(action: {
+//                 videoPlayerController.play()
+//                     }, label: {
+//                         Text("Play Video")
+//                     })
+//         }
        
 	}
+    
 
 }
 

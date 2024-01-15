@@ -18,7 +18,7 @@ struct ComposeView: UIViewControllerRepresentable {
             VideoItem(videoUrl:"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", title: Optional.none, videoDescription: Optional.none, licenseUrl: Optional.none, listOfClosedCaptions:Optional.none),
             VideoItem(videoUrl:"https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8", title: Optional.none, videoDescription: Optional.none, licenseUrl: Optional.none, listOfClosedCaptions:Optional.none),
             VideoItem(videoUrl:"https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd", title: Optional.none, videoDescription: Optional.none, licenseUrl: "https://cwip-shaka-proxy.appspot.com/no_auth", listOfClosedCaptions:Optional.none),
-            
+
         ]
         return  MainViewControllerKt.VideoViewController(videoPlayerController:videoPlayerController,
                                                          videoItem:Optional.none ,

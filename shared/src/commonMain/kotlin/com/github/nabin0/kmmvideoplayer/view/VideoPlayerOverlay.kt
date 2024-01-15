@@ -146,7 +146,7 @@ fun BoxScope.VideoTopRowControls(
             }
 
         val modifier =
-            Modifier.padding(6.dp).background(Color.Black.copy(alpha = 0f), shape = CircleShape)
+            Modifier.padding(top = 16.dp, end = 16.dp).background(Color.Black.copy(alpha = 0f), shape = CircleShape)
                 .size(24.dp)
         Spacer(Modifier.weight(2f))
         IconButton(modifier = modifier, onClick = {

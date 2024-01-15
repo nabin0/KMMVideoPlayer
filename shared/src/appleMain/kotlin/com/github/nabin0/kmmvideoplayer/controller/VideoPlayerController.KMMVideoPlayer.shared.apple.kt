@@ -1,9 +1,16 @@
 package com.github.nabin0.kmmvideoplayer.controller
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.interop.UIKitView
+import androidx.compose.ui.unit.dp
 import com.github.nabin0.kmmvideoplayer.data.AudioTrack
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
@@ -14,6 +21,7 @@ import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.cValue
 import kotlinx.coroutines.flow.MutableStateFlow
+import platform.AVFoundation.AVLayerVideoGravityResizeAspectFill
 import platform.AVFoundation.AVMediaCharacteristicAudible
 import platform.AVFoundation.AVMediaCharacteristicLegible
 import platform.AVFoundation.AVMediaSelectionGroup
@@ -45,7 +53,11 @@ import platform.AVFoundation.setRate
 import platform.AVFoundation.setVolume
 import platform.AVFoundation.timeControlStatus
 import platform.AVKit.AVPlayerViewController
+import platform.CoreGraphics.CGAffineTransformMakeRotation
 import platform.CoreGraphics.CGRect
+import platform.CoreGraphics.CGRectGetHeight
+import platform.CoreGraphics.CGRectGetWidth
+import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSize
 import platform.CoreGraphics.CGSizeMake
 import platform.CoreMedia.CMTime
@@ -63,14 +75,22 @@ import platform.UIKit.UIDeviceOrientation
 import platform.UIKit.UIInterfaceOrientation
 import platform.UIKit.UIInterfaceOrientationIsPortrait
 import platform.UIKit.UIInterfaceOrientationLandscapeLeft
+import platform.UIKit.UIInterfaceOrientationMask
 import platform.UIKit.UIInterfaceOrientationMaskLandscape
+import platform.UIKit.UIInterfaceOrientationMaskLandscapeLeft
+import platform.UIKit.UIInterfaceOrientationMaskLandscapeRight
+import platform.UIKit.UIInterfaceOrientationMaskPortrait
 import platform.UIKit.UIInterfaceOrientationPortrait
 import platform.UIKit.UIModalPresentationFullScreen
 import platform.UIKit.UIScreen
 import platform.UIKit.UIView
 import platform.UIKit.UIViewController
+import platform.UIKit.UIWindowScene
+import platform.UIKit.UIWindowSceneGeometryPreferences
 import platform.UIKit.UIWindowSceneGeometryPreferencesIOS
 import platform.UIKit.attemptRotationToDeviceOrientation
+import platform.UIKit.setNeedsUpdateOfSupportedInterfaceOrientations
+import platform.UIKit.setStatusBarOrientation
 import platform.UIKit.supportedInterfaceOrientations
 import platform.darwin.NSEC_PER_SEC
 import platform.darwin.NSObject
@@ -191,16 +211,21 @@ actual class VideoPlayerController {
         avPlayerViewController.showsPlaybackControls = false
 
         startTimeObserver()
+        playerLayer.setVideoGravity(AVLayerVideoGravityResizeAspectFill)
 
         isPlaying.value = (avPlayer?.timeControlStatus() == AVPlayerTimeControlStatusPlaying)
 
         playerLayer.player = avPlayer
 
+        val a = UIScreen.mainScreen.bounds
         UIKitView(
             interactive = true,
-            modifier = modifier,
+            modifier = modifier.background(
+                Color.Red
+            ),
             factory = {
                 val playerContainer = UIView()
+                playerContainer.setFrame(CGRectMake(0.0, 0.0, 10.0, 10.0))
                 playerContainer.addSubview(avPlayerViewController.view)
                 if (playWhenReady != null && playWhenReady == true) {
                     avPlayer?.play()
@@ -208,14 +233,13 @@ actual class VideoPlayerController {
                 }
                 avPlayer?.closedCaptionDisplayEnabled = false
                 isBuffering.value = true
-                //playerContainer.transform = CGAffineTransformMakeRotation(90.0)
+                playerContainer.setFrame(UIScreen.mainScreen.bounds)
 
                 playerContainer
             },
             onResize = { view: UIView, rect: CValue<CGRect> ->
                 CATransaction.begin()
                 CATransaction.setValue(true, kCATransactionDisableActions)
-                // view.transform = CGAffineTransformMakeRotation(90.0)
                 view.layer.setFrame(rect)
                 playerLayer.setFrame(rect)
                 avPlayerViewController.view.layer.frame = rect
@@ -231,53 +255,23 @@ actual class VideoPlayerController {
 
     @Composable
     actual fun EnablePortraitScreenMode() {
-
-
+        setRequestOrientationChange(UIInterfaceOrientationMaskPortrait)
     }
 
-    private fun setDeviceOrientation(orientationValue: Long) {
-        UIDevice.currentDevice.setValue(orientationValue, "orientation")
-        UIViewController.attemptRotationToDeviceOrientation()
-    }
     @Composable
     actual fun EnableLandscapeScreenMode() {
+        setRequestOrientationChange(UIInterfaceOrientationMaskLandscapeRight)
+    }
 
-        try {
-            val appDelegate = UIApplication.sharedApplication.delegate
-            val window = appDelegate?.window
-//            val appDelegate = UIApplication.shared.delegate as? AppDelegate
-//            val window = appDelegate?.window
-//            window?.rootViewController?.set = .mask.toInt()
-            val orientation = UIDevice.currentDevice.orientation
-
-            if (orientation == UIDeviceOrientation.UIDeviceOrientationPortrait || orientation == UIDeviceOrientation.UIDeviceOrientationPortraitUpsideDown) {
-                setDeviceOrientation(UIInterfaceOrientationLandscapeLeft)
-            } else {
-                setDeviceOrientation(UIInterfaceOrientationPortrait)
-            }
-        }catch (e: Exception){
-            e.printStackTrace()
+    private fun setRequestOrientationChange(orientation: UIInterfaceOrientationMask) {
+        val scenes = UIApplication.sharedApplication.connectedScenes.first() as UIWindowScene
+        scenes.requestGeometryUpdateWithPreferences(
+            UIWindowSceneGeometryPreferencesIOS(
+                orientation
+            )
+        ) {
+            println("error for orientation change request $it")
         }
-
-
-        // val windowScreen =
-        // UIDevice.currentDevice.or
-//        var currentOrientation: UIInterfaceOrientation = UIApplication.sharedApplication.statusBarOrientation
-//        var value = UIInterfaceOrientationLandscapeLeft
-//        UIDevice.currentDevice.setValue(value, forKey: "orientation")
-//        val win = UIViewController().view.window?.windowScene
-//
-//        win?.let {
-//            //if (win.interfaceOrientation == UIInterfaceOrientationPortrait) {
-//            win.requestGeometryUpdateWithPreferences(
-//                UIWindowSceneGeometryPreferencesIOS(
-//                    UIInterfaceOrientationMaskLandscape
-//                )
-//            ) {
-//                println("error: $it")
-//            }
-//            //}
-//        }
     }
 
     @Composable
@@ -296,6 +290,7 @@ actual class VideoPlayerController {
 
     actual fun play() {
         //isPlaying.value = true
+        isBuffering.value = true
         avPlayer?.play()
     }
 

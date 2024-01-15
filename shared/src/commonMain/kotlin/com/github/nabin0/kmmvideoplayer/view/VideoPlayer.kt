@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -73,12 +75,13 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
         videoPlayerController.EnablePortraitScreenMode()
     }
 
-    val videoViewModifier = if (enableLandscapeMode) Modifier.fillMaxSize() else modifier.fillMaxHeight(0.27f)
+    val videoViewModifier =
+        if (enableLandscapeMode) Modifier.fillMaxSize() else modifier.fillMaxHeight(0.27f)
 
     Box(modifier = videoViewModifier.background(Color.Black)) {
-            videoPlayerController.PlayerView(modifier = Modifier.fillMaxWidth().noRippleClickable {
-                //showOverlay = true
-            }, useDefaultController = false)
+        videoPlayerController.PlayerView(modifier = Modifier.fillMaxWidth().noRippleClickable {
+            //showOverlay = true
+        }, useDefaultController = false)
 
         // ViKitView onclick not working, used as its alternative until fixed
         Box(modifier = Modifier.fillMaxSize().clickable {
@@ -90,7 +93,7 @@ fun VideoPlayerView(modifier: Modifier = Modifier, videoPlayerController: VideoP
             videoPlayerController = videoPlayerController,
             showOverLay = showOverlay,
             onClickOverlayToHide = {
-                 showOverlay = false
+                showOverlay = false
             },
             onToggleScreenOrientation = { enableLandscapeMode = !enableLandscapeMode },
             isLandscapeView = enableLandscapeMode,
