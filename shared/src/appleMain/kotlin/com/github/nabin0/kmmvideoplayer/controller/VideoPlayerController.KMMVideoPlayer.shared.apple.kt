@@ -27,12 +27,10 @@ import platform.AVFoundation.AVPlayerLayer
 import platform.AVFoundation.AVPlayerTimeControlStatusPlaying
 import platform.AVFoundation.addPeriodicTimeObserverForInterval
 import platform.AVFoundation.asset
-import platform.AVFoundation.availableMediaCharacteristicsWithMediaSelectionOptions
 import platform.AVFoundation.closedCaptionDisplayEnabled
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.currentTime
 import platform.AVFoundation.duration
-import platform.AVFoundation.isClosedCaptionDisplayEnabled
 import platform.AVFoundation.isPlaybackLikelyToKeepUp
 import platform.AVFoundation.mediaSelectionGroupForMediaCharacteristic
 import platform.AVFoundation.mediaSelectionOptionsFromArray
@@ -58,9 +56,6 @@ import platform.CoreMedia.CMTime
 import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeMakeWithSeconds
 import platform.Foundation.NSLocale
-import platform.Foundation.NSLocaleCollatorIdentifier
-import platform.Foundation.NSLocaleIdentifier
-import platform.Foundation.NSLocaleLanguageCode
 import platform.Foundation.NSURL
 import platform.QuartzCore.CATransaction
 import platform.QuartzCore.kCATransactionDisableActions
@@ -79,10 +74,10 @@ actual class VideoPlayerController {
     private var avPlayer: AVPlayer? = null
 
     private var playWhenReady: Boolean? = null
-
     private val videoList: MutableList<VideoItem> = mutableListOf()
     private var currentVideoItemIndex: Int? = null
     private var currentVideoItem: AVPlayerItem? = null
+    private lateinit var timeObserver: Any
 
     private var currentSelectedVideoQuality =
         VideoQuality(index = -1, value = "Auto", resolutionKey = -1, height = null, width = null)
@@ -93,8 +88,7 @@ actual class VideoPlayerController {
         name = null
     )
 
-    //val url = "https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8"
-    //private val avPlayerItem = AVPlayerItem(uRL = NSURL.URLWithString(url)!!)
+    private var currentSelectedAudioTrack: AudioTrack? = null
 
     actual val mediaDuration: MutableStateFlow<Long> = MutableStateFlow(1L)
     actual val isPlaying: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -106,7 +100,6 @@ actual class VideoPlayerController {
         MutableStateFlow(null)
 
 
-    private lateinit var timeObserver: Any
 
     @OptIn(ExperimentalForeignApi::class)
     private val observer: (CValue<CMTime>) -> Unit = { time: CValue<CMTime> ->
@@ -121,19 +114,6 @@ actual class VideoPlayerController {
               duration = if (cmTime.isNaN()) 0 else cmTime.toDuration(DurationUnit.SECONDS).inWholeSeconds
           }
          */
-
-
-//        for (track in avPlayerItem.tracks) {
-//            val a = track as AVPlayerItemTrack
-//            val asset = a.assetTrack
-//            if (asset != null) {
-//                if (asset.mediaType == AVMediaTypeVideo) {
-//
-//                }
-//            }
-//        }
-
-
     }
 
     init {
@@ -375,8 +355,8 @@ actual class VideoPlayerController {
 
 
     private fun getAvailableSubtitleAndAudioTracks(videoItem: VideoItem) {
-        var mediaSelectionGroupCC: AVMediaSelectionGroup? = null
-        var ccOptions: List<*>? = null
+        val mediaSelectionGroupCC: AVMediaSelectionGroup?
+        val ccOptions: List<*>?
         try {
             val hlsAsset = currentVideoItem?.asset
             val mediaCharacteristicCC = AVMediaCharacteristicLegible
@@ -393,8 +373,8 @@ actual class VideoPlayerController {
                 )
             )
             if (ccOptions != null) {
-                for (i in ccOptions!!.indices) {
-                    val option = ccOptions!![i] as AVMediaSelectionOption
+                for (i in ccOptions.indices) {
+                    val option = ccOptions[i] as AVMediaSelectionOption
                     if (option.mediaType == "sbtl") {
                         if (!option.extendedLanguageTag.isNullOrBlank()) {
                             ccSelectorList.add(
@@ -410,19 +390,32 @@ actual class VideoPlayerController {
                 listOfCC.value = ccSelectorList
             }
 
-            val audioSelectorList = mutableListOf<String>()
-
+            val audioSelectorList = mutableListOf<AudioTrack>()
             val mediaCharacteristicAudio = AVMediaCharacteristicAudible
             val mediaSelectionGroup =
                 hlsAsset?.mediaSelectionGroupForMediaCharacteristic(mediaCharacteristicAudio)
             val audioTrackOptions = mediaSelectionGroup?.options
-
+            val defaultAudioTrack = mediaSelectionGroup?.defaultOption
             if (audioTrackOptions != null) {
                 for (i in audioTrackOptions.indices) {
                     val option = audioTrackOptions[i] as AVMediaSelectionOption
-                    option.extendedLanguageTag?.let { audioSelectorList.add(it) }
+                    option.extendedLanguageTag?.let {
+                        val audioTrack = AudioTrack(
+                            index = i,
+                            language = it,
+                            name = it,
+                            audioTrackGroupIndex = i,
+                            isStereo = true
+                        )
+                        if (it == defaultAudioTrack?.extendedLanguageTag) {
+                            currentSelectedAudioTrack = audioTrack
+                        }
+                        audioSelectorList.add(
+                            audioTrack
+                        )
+                    }
                 }
-                // listOfAudioFormats.value = audioSelectorList
+                listOfAudioFormats.value = audioSelectorList
             }
 
 
@@ -485,10 +478,12 @@ actual class VideoPlayerController {
             }
             setCCEnabled(true)
 
-            val a = currentVideoItem?.asset
+            val currentVideoAsset = currentVideoItem?.asset
             setCCEnabled(true)
 
-            val group = a?.mediaSelectionGroupForMediaCharacteristic(AVMediaCharacteristicLegible)
+            val group = currentVideoAsset?.mediaSelectionGroupForMediaCharacteristic(
+                AVMediaCharacteristicLegible
+            )
             val options = group?.options?.let {
                 AVMediaSelectionGroup.mediaSelectionOptionsFromArray(
                     mediaSelectionOptions = it,
@@ -579,11 +574,31 @@ actual class VideoPlayerController {
     }
 
     actual fun setSpecificAudioTrack(audioTrack: AudioTrack) {
-
+        try {
+            val currentVideoAsset = currentVideoItem?.asset
+            val group = currentVideoAsset?.mediaSelectionGroupForMediaCharacteristic(
+                AVMediaCharacteristicAudible
+            )
+            val options = group?.options?.let {
+                AVMediaSelectionGroup.mediaSelectionOptionsFromArray(
+                    mediaSelectionOptions = it,
+                    withLocale = NSLocale(audioTrack.language)
+                )
+            }
+            if (group != null) {
+                currentVideoItem?.selectMediaOption(
+                    options?.get(0) as AVMediaSelectionOption?,
+                    group
+                )
+                currentSelectedAudioTrack = audioTrack
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     actual fun getCurrentSelectedAudioTrack(): AudioTrack? {
-        return null
+        return currentSelectedAudioTrack
     }
 
 }
