@@ -16,6 +16,9 @@ import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.cValue
 import kotlinx.coroutines.flow.MutableStateFlow
+import platform.AVFoundation.AVContentKeySession
+import platform.AVFoundation.AVContentKeySessionDelegateProtocol
+import platform.AVFoundation.AVContentKeySessionDelegateProtocolMeta
 import platform.AVFoundation.AVLayerVideoGravityResizeAspectFill
 import platform.AVFoundation.AVMediaCharacteristicAudible
 import platform.AVFoundation.AVMediaCharacteristicLegible
@@ -176,7 +179,6 @@ actual class VideoPlayerController {
 
         playerLayer.player = avPlayer
 
-        val a = UIScreen.mainScreen.bounds
         UIKitView(
             interactive = true,
             modifier = modifier.background(
@@ -467,7 +469,6 @@ actual class VideoPlayerController {
             null
         }
     }
-
 
     actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
         try {

@@ -1,7 +1,7 @@
 import SwiftUI
 import shared
 
-let videoPlayerController = VideoPlayerControllerFactory().createVideoPlayer()
+//let videoPlayerController = VideoPlayerControllerFactory().createVideoPlayer()
 
 struct ContentView: View {
     
@@ -21,7 +21,7 @@ struct ContentView: View {
 //                         Text("Play Video")
 //                     })
 //         }
-       
+//       
 	}
     
 

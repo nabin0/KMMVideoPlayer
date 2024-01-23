@@ -25,7 +25,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demotest.TestComposable
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerControllerFactory
+import com.github.nabin0.kmmvideoplayer.controller.test.CounterFactory
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaption
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.view.VideoPlayer
@@ -58,6 +60,11 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
 
                 Surface {
+
+                    TestComposable(CounterFactory().getCounterData())
+
+                    return@Surface
+
                     val videoPlayer =
                         remember { VideoPlayerControllerFactory().createVideoPlayer() }
 
