@@ -34,6 +34,7 @@ import platform.AVKit.AVPlayerViewControllerDelegateProtocol
 import platform.CoreGraphics.CGRect
 import platform.Foundation.NSCoder
 import platform.Foundation.NSData
+import platform.Foundation.NSDataMeta
 import platform.Foundation.NSError
 import platform.Foundation.NSMutableURLRequest
 import platform.Foundation.NSString
@@ -51,6 +52,7 @@ import platform.QuartzCore.CATransaction
 import platform.QuartzCore.kCATransactionDisableActions
 import platform.UIKit.UIView
 import platform.darwin.NSObject
+import platform.darwin.dispatch_get_main_queue
 import platform.darwin.dispatch_queue_global_t
 
 actual class CounterData {
@@ -147,8 +149,7 @@ actual class CounterData {
 
 
     class TestController : AVPlayerViewController, AVContentKeySessionDelegateProtocol {
-        val fpsCertificateUrl: String =
-            "https://v-msnprod.monumentalsportsnetwork.com/certs/fairplay.cer"
+        val fpsCertificateUrl: String = "https://v-msnprod.monumentalsportsnetwork.com/certs/fairplay.cer"
         val licenseToken: String =
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoxLCJjb21fa2V5X2lkIjoiZWI5ZDU3NjMtNTc5OS00ZDA0LWI4NzgtYjAyOTAwYmFjNDUyIiwibWVzc2FnZSI6eyJ0eXBlIjoiZW50aXRsZW1lbnRfbWVzc2FnZSIsInZlcnNpb24iOjIsImxpY2Vuc2UiOnsiZHVyYXRpb24iOjkwMH0sImNvbnRlbnRfa2V5c19zb3VyY2UiOnsiaW5saW5lIjpbeyJpZCI6IjUyMGZmYWIwLTA4Y2ItNDhlMS04NDlhLTVmYjliYjg4YjA2NCIsInVzYWdlX3BvbGljeSI6IlBvbGljeSBBIn1dfSwiY29udGVudF9rZXlfdXNhZ2VfcG9saWNpZXMiOlt7Im5hbWUiOiJQb2xpY3kgQSIsInBsYXlyZWFkeSI6eyJtaW5fZGV2aWNlX3NlY3VyaXR5X2xldmVsIjoyMDAwLCJwbGF5X2VuYWJsZXJzIjpbIjc4NjYyN0Q4LUMyQTYtNDRCRS04Rjg4LTA4QUUyNTVCMDFBNyJdfSwid2lkZXZpbmUiOnsiZGV2aWNlX3NlY3VyaXR5X2xldmVsIjoiU1dfU0VDVVJFX0NSWVBUTyJ9fV19fQ.QfBjXZuL3EijeNhqJf88YyePaSow3TsK2S0TnjaNfTw"
         val licenseServiceUrl: String =
@@ -169,13 +170,41 @@ actual class CounterData {
 
         override fun viewDidLoad() {
             super.viewDidLoad()
-            prepareAndPlay()
+            //contentKeySession = contentKeySessionWithKeySystem(AVContentKeySystemFairPlayStreaming)
+            //contentKeySession!!.setDelegate(this@TestController, dispatch_get_main_queue())
+
+//            requestData()
+
+             prepareAndPlay()
+        }
+
+        fun requestData(){
+            println("------ ghchgfyyf")
+
+            try{
+                val a = requestApplicationCertificate(fpsCertificateUrl)
+                if(a == null){
+                    println("a is null")
+                }
+
+                println("------a is ${a.toString()}")
+            }catch (e: Exception){
+                println("error got here ${e.message}")
+            }
         }
 
         private fun prepareAndPlay() {
-            val player = AVPlayer(uRL = NSURL.URLWithString(url)!!)
+            println("-----------  1231")
+            val assetUrl = NSURL(fileURLWithPath = videoUrl)
+            val asset: AVURLAsset = AVURLAsset(uRL = assetUrl, null)
+            contentKeySession!!.addContentKeyRecipient(asset as AVContentKeyRecipientProtocol)
+            val playerItem = AVPlayerItem(asset = asset)
+            val player = AVPlayer(playerItem)
+            player.replaceCurrentItemWithPlayerItem(playerItem)
+            player.play()
             this.player = player
             this.showsPlaybackControls = true
+            println("-----------  1232")
         }
 
         override fun contentKeySession(
@@ -183,103 +212,6 @@ actual class CounterData {
             didProvideContentKeyRequest: AVContentKeyRequest
         ) {
             println("-----------  hello this is controller")
-        }
-
-    }
-
-
-    class PlayerDTest(val player: AVPlayer, val avplayerController: AVPlayerViewController) :
-        NSObject(),
-        AVContentKeySessionDelegateProtocol {
-
-        // Certificate Url
-        val fpsCertificateUrl: String =
-            "https://v-msnprod.monumentalsportsnetwork.com/certs/fairplay.cer"
-
-        // License Token
-        val licenseToken: String =
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoxLCJjb21fa2V5X2lkIjoiZWI5ZDU3NjMtNTc5OS00ZDA0LWI4NzgtYjAyOTAwYmFjNDUyIiwibWVzc2FnZSI6eyJ0eXBlIjoiZW50aXRsZW1lbnRfbWVzc2FnZSIsInZlcnNpb24iOjIsImxpY2Vuc2UiOnsiZHVyYXRpb24iOjkwMH0sImNvbnRlbnRfa2V5c19zb3VyY2UiOnsiaW5saW5lIjpbeyJpZCI6IjUyMGZmYWIwLTA4Y2ItNDhlMS04NDlhLTVmYjliYjg4YjA2NCIsInVzYWdlX3BvbGljeSI6IlBvbGljeSBBIn1dfSwiY29udGVudF9rZXlfdXNhZ2VfcG9saWNpZXMiOlt7Im5hbWUiOiJQb2xpY3kgQSIsInBsYXlyZWFkeSI6eyJtaW5fZGV2aWNlX3NlY3VyaXR5X2xldmVsIjoyMDAwLCJwbGF5X2VuYWJsZXJzIjpbIjc4NjYyN0Q4LUMyQTYtNDRCRS04Rjg4LTA4QUUyNTVCMDFBNyJdfSwid2lkZXZpbmUiOnsiZGV2aWNlX3NlY3VyaXR5X2xldmVsIjoiU1dfU0VDVVJFX0NSWVBUTyJ9fV19fQ.QfBjXZuL3EijeNhqJf88YyePaSow3TsK2S0TnjaNfTw"
-
-        // License Service Url
-        val licenseServiceUrl: String =
-            "https://37eb8fe7.drm-fairplay-licensing.axprod.net/AcquireLicense"
-
-        // Video url
-        val videoUrl: String =
-            "https://v-msnprod.monumentalsportsnetwork.com/Renditions/20231127/1701124798032_download_msn_app_preview/hls/fairplay/1701124798032_download_msn_app_preview.m3u8"
-
-        // Certificate data
-        var fpsCertificate: NSData? = null
-
-        // Content Key session
-        var contentKeySession: AVContentKeySession? = null
-
-        // URLSession
-        val urlSession = NSURLSession.sharedSession
-
-        init {
-            println("-----------inside the mehtod init")
-            player.setRate(2f)
-        }
-
-
-        fun callthis() {
-            contentKeySession = contentKeySessionWithKeySystem(AVContentKeySystemFairPlayStreaming)
-//        contentKeySession = contentKeySessionWithKeySystem(AVContentKeySystemAuthorizationToken)
-            contentKeySession!!.setDelegate(this@PlayerDTest, dispatch_queue_global_t())
-            // contentKeySession!!.setDelegate(self, queue: DispatchQueue(label: "\(Bundle.main.bundleIdentifier!).ContentKeyDelegateQueue"))
-            val assetUrl = NSURL(fileURLWithPath = videoUrl)
-            val asset: AVURLAsset = AVURLAsset(uRL = assetUrl, null)
-            contentKeySession!!.addContentKeyRecipient(asset as AVContentKeyRecipientProtocol)
-            val playerItem = AVPlayerItem(asset = asset)
-            player.replaceCurrentItemWithPlayerItem(playerItem)
-            player.play()
-            println("---------------inside callthis")
-
-        }
-
-
-        override fun contentKeySession(
-            session: AVContentKeySession,
-            contentKeyRequest: AVContentKeyRequest,
-            didFailWithError: NSError
-        ) {
-            println("---------------inside callthis")
-
-        }
-
-        override fun contentKeySession(
-            session: AVContentKeySession,
-            didProvidePersistableContentKeyRequest: AVPersistableContentKeyRequest
-        ) {
-            println("---------------inside callthis")
-        }
-
-
-        override fun contentKeySession(
-            session: AVContentKeySession,
-            didUpdatePersistableContentKey: NSData,
-            forContentKeyIdentifier: Any
-        ) {
-            println("---------------inside callthis")
-
-        }
-
-        override fun contentKeySessionContentProtectionSessionIdentifierDidChange(session: AVContentKeySession) {
-            println("---------------inside callthis")
-
-        }
-
-        override fun contentKeySessionDidGenerateExpiredSessionReport(session: AVContentKeySession) {
-            println("---------------inside callthis")
-        }
-
-        override fun contentKeySession(
-            session: AVContentKeySession,
-            didProvideContentKeyRequest: AVContentKeyRequest
-        ) {
-            println("---------------this opme os ca;;ed hjerejlajgiosdfjg")
-
             val contentKeyIdentifierString = didProvideContentKeyRequest.identifier as? String
             println("--------contentidentifietr $contentKeyIdentifierString")
 
@@ -345,10 +277,10 @@ actual class CounterData {
 
 
             try {
-                val applicationCertificate = requestApplicationCertificate()
-
+                val applicationCertificate = requestApplicationCertificate(fpsCertificateUrl)
+                println("------applicationCertificate ${applicationCertificate.toString()}")
                 if (applicationCertificate != null) {
-                    print("application certificate is not null.")
+                    kotlin.io.print("-------application certificate is not null.")
                     didProvideContentKeyRequest.makeStreamingContentKeyRequestDataForApp(
                         contentIdentifier = contentIdentifierData?.toNsData(),
                         options = mapOf(AVContentKeyRequestProtocolVersionsKey to listOf(1)),
@@ -364,34 +296,226 @@ actual class CounterData {
             }
 
             println("------------1")
+
         }
 
-        private fun requestApplicationCertificate(): NSData? {
-            println("------------certificate")
+    }
+}
 
-            var applicationCertificate: NSData? = null
-            try {
-                applicationCertificate =
-                    NSData.dataWithContentsOfURL(url = NSURL.fileURLWithPath(path = fpsCertificateUrl))
-            } catch (e: Exception) {
-                print("Error loading FairPlay application certificate: ($e)")
+fun requestApplicationCertificate(fpsCertificateUrl: String): NSData? {
+    println("------------certificate")
+    var applicationCertificate: NSData? = null
+    try {
+        println("------------certificate 11try")
+        applicationCertificate = NSURL.URLWithString(URLString = fpsCertificateUrl)
+            ?.let {
+                println("-----url ${it.absoluteURL}")
+                NSData.dataWithContentsOfURL(url = it)
             }
 
-            return applicationCertificate
-        }
+        // applicationCertificate = NSData.dataWithContentsOfURL(url = NSURL.fileURLWithPath(path = fpsCertificateUrl))
+    } catch (e: Exception) {
+        print("Error loading FairPlay application certificate: ($e)")
+    }
 
-        @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-        fun ByteArray.toNsData(): NSData? = memScoped {
-            val string = NSString.create(string = this@toNsData.decodeToString())
-            return string.dataUsingEncoding(encoding = NSUTF8StringEncoding)
-        }
+    return applicationCertificate
+}
+
+
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+fun ByteArray.toNsData(): NSData? = memScoped {
+    val string = NSString.create(string = this@toNsData.decodeToString())
+    return string.dataUsingEncoding(encoding = NSUTF8StringEncoding)
+}
+
+
+
+class PlayerDTest(val player: AVPlayer, val avplayerController: AVPlayerViewController) :
+    NSObject(),
+    AVContentKeySessionDelegateProtocol {
+
+    // Certificate Url
+    val fpsCertificateUrl: String =
+        "https://v-msnprod.monumentalsportsnetwork.com/certs/fairplay.cer"
+
+    // License Token
+    val licenseToken: String =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoxLCJjb21fa2V5X2lkIjoiZWI5ZDU3NjMtNTc5OS00ZDA0LWI4NzgtYjAyOTAwYmFjNDUyIiwibWVzc2FnZSI6eyJ0eXBlIjoiZW50aXRsZW1lbnRfbWVzc2FnZSIsInZlcnNpb24iOjIsImxpY2Vuc2UiOnsiZHVyYXRpb24iOjkwMH0sImNvbnRlbnRfa2V5c19zb3VyY2UiOnsiaW5saW5lIjpbeyJpZCI6IjUyMGZmYWIwLTA4Y2ItNDhlMS04NDlhLTVmYjliYjg4YjA2NCIsInVzYWdlX3BvbGljeSI6IlBvbGljeSBBIn1dfSwiY29udGVudF9rZXlfdXNhZ2VfcG9saWNpZXMiOlt7Im5hbWUiOiJQb2xpY3kgQSIsInBsYXlyZWFkeSI6eyJtaW5fZGV2aWNlX3NlY3VyaXR5X2xldmVsIjoyMDAwLCJwbGF5X2VuYWJsZXJzIjpbIjc4NjYyN0Q4LUMyQTYtNDRCRS04Rjg4LTA4QUUyNTVCMDFBNyJdfSwid2lkZXZpbmUiOnsiZGV2aWNlX3NlY3VyaXR5X2xldmVsIjoiU1dfU0VDVVJFX0NSWVBUTyJ9fV19fQ.QfBjXZuL3EijeNhqJf88YyePaSow3TsK2S0TnjaNfTw"
+
+    // License Service Url
+    val licenseServiceUrl: String =
+        "https://37eb8fe7.drm-fairplay-licensing.axprod.net/AcquireLicense"
+
+    // Video url
+    val videoUrl: String =
+        "https://v-msnprod.monumentalsportsnetwork.com/Renditions/20231127/1701124798032_download_msn_app_preview/hls/fairplay/1701124798032_download_msn_app_preview.m3u8"
+
+    // Certificate data
+    var fpsCertificate: NSData? = null
+
+    // Content Key session
+    var contentKeySession: AVContentKeySession? = null
+
+    // URLSession
+    val urlSession = NSURLSession.sharedSession
+
+    init {
+        println("-----------inside the mehtod init")
+        player.setRate(2f)
+    }
+
+
+    fun callthis() {
+        contentKeySession = contentKeySessionWithKeySystem(AVContentKeySystemFairPlayStreaming)
+//        contentKeySession = contentKeySessionWithKeySystem(AVContentKeySystemAuthorizationToken)
+        contentKeySession!!.setDelegate(this@PlayerDTest, dispatch_queue_global_t())
+        // contentKeySession!!.setDelegate(self, queue: DispatchQueue(label: "\(Bundle.main.bundleIdentifier!).ContentKeyDelegateQueue"))
+        val assetUrl = NSURL(fileURLWithPath = videoUrl)
+        val asset: AVURLAsset = AVURLAsset(uRL = assetUrl, null)
+        contentKeySession!!.addContentKeyRecipient(asset as AVContentKeyRecipientProtocol)
+        val playerItem = AVPlayerItem(asset = asset)
+        player.replaceCurrentItemWithPlayerItem(playerItem)
+        player.play()
+        println("---------------inside callthis")
 
     }
 
 
-    actual class CounterFactory {
-        actual fun getCounterData(): CounterData {
-            return CounterData()
-        }
+    override fun contentKeySession(
+        session: AVContentKeySession,
+        contentKeyRequest: AVContentKeyRequest,
+        didFailWithError: NSError
+    ) {
+        println("---------------inside callthis")
 
     }
+
+    override fun contentKeySession(
+        session: AVContentKeySession,
+        didProvidePersistableContentKeyRequest: AVPersistableContentKeyRequest
+    ) {
+        println("---------------inside callthis")
+        
+    }
+
+
+    override fun contentKeySession(
+        session: AVContentKeySession,
+        didUpdatePersistableContentKey: NSData,
+        forContentKeyIdentifier: Any
+    ) {
+        println("---------------inside callthis")
+
+    }
+
+    override fun contentKeySessionContentProtectionSessionIdentifierDidChange(session: AVContentKeySession) {
+        println("---------------inside callthis")
+
+    }
+
+    override fun contentKeySessionDidGenerateExpiredSessionReport(session: AVContentKeySession) {
+        println("---------------inside callthis")
+    }
+
+    override fun contentKeySession(
+        session: AVContentKeySession,
+        didProvideContentKeyRequest: AVContentKeyRequest
+    ) {
+        println("---------------this opme os ca;;ed hjerejlajgiosdfjg")
+
+        val contentKeyIdentifierString = didProvideContentKeyRequest.identifier as? String
+        println("--------contentidentifietr $contentKeyIdentifierString")
+
+
+        val contentIdentifier = contentKeyIdentifierString?.replace("skd://", "")
+
+        println("---------contentidentifietr $contentIdentifier")
+
+        val contentIdentifierData = contentIdentifier?.encodeToByteArray()
+
+        val getCkcAndMakeContentAvailable: (spcData: NSData?, error: NSError?) -> Unit =
+            { spcData, error ->
+                if (error != null) {
+                    println("---------ERROR: Failed to prepare SPC: $error")
+                    didProvideContentKeyRequest.processContentKeyResponseError(error)
+                }
+
+                if (error == null) {
+
+                    if (spcData != null) {
+//                    /*
+//                     Send SPC to License Service and obtain CKC.
+//                    */
+                        println("----------spc data get here $spcData")
+                        val url = NSURL(string = licenseServiceUrl)
+                        val ksmRequest = NSMutableURLRequest(uRL = url)
+                        ksmRequest.setHTTPMethod("POST")
+                        ksmRequest.setValue(
+                            value = licenseToken,
+                            forHTTPHeaderField = "X-AxDRM-Message"
+                        )
+                        ksmRequest.setHTTPBody(spcData)
+
+                        val dataTask =
+                            urlSession.dataTaskWithRequest(ksmRequest) { data, response, error ->
+                                // Handle the completion of the data task here
+                                if (error != null) {
+                                    println("ERROR: Error getting CKC: ${error.localizedDescription}")
+                                } else if (data != null) {
+                                    /*
+                                     AVContentKeyResponse is used to represent the data returned from the license service when requesting a key for
+                                     decrypting content.
+                                     */
+                                    val keyResponse =
+                                        AVContentKeyResponse.contentKeyResponseWithFairPlayStreamingKeyResponseData(
+                                            data
+                                        )
+
+                                    /*
+                                     Provide the content key response to make protected content available for processing.
+                                    */
+                                    didProvideContentKeyRequest.processContentKeyResponse(
+                                        keyResponse
+                                    )
+                                }
+                            }
+
+                        dataTask.resume()
+                    }
+
+                }
+            }
+
+
+        try {
+            val applicationCertificate = requestApplicationCertificate(fpsCertificateUrl)
+
+            if (applicationCertificate != null) {
+                print("application certificate is not null.")
+                didProvideContentKeyRequest.makeStreamingContentKeyRequestDataForApp(
+                    contentIdentifier = contentIdentifierData?.toNsData(),
+                    options = mapOf(AVContentKeyRequestProtocolVersionsKey to listOf(1)),
+                    appIdentifier = applicationCertificate,
+                    completionHandler = { nsData, nsError ->
+                        getCkcAndMakeContentAvailable(nsData, nsError)
+                    }
+                )
+            }
+        } catch (e: Exception) {
+            // didProvideContentKeyRequest.processContentKeyResponseError()
+            e.printStackTrace()
+        }
+
+        println("------------1")
+    }
+
+
+}
+
+
+actual class CounterFactory {
+    actual fun getCounterData(): CounterData {
+        return CounterData()
+    }
+
+}
