@@ -6,7 +6,12 @@ import shared
 struct ContentView: View {
     
 	var body: some View {
-        ComposeView().edgesIgnoringSafeArea(.all).statusBarHidden(true)
+        VStack{
+            Text("Hello this is ios app a")
+            
+            ComposeView().edgesIgnoringSafeArea(.all).statusBarHidden(true)
+        }
+        
 //         HStack{
 //             Button(action: {
 //                 videoPlayerController.pause()
@@ -21,7 +26,7 @@ struct ContentView: View {
 //                         Text("Play Video")
 //                     })
 //         }
-//       
+       
 	}
     
 

@@ -17,7 +17,7 @@ kotlin {
         }
     }
     iosX64()
-//    iosArm64()
+    iosArm64()
     iosSimulatorArm64()
 
     configure(targets){
