@@ -146,7 +146,8 @@ fun BoxScope.VideoTopRowControls(
             }
 
         val modifier =
-            Modifier.padding(top = 16.dp, end = 16.dp).background(Color.Black.copy(alpha = 0f), shape = CircleShape)
+            Modifier.padding(top = 16.dp, end = 16.dp)
+                .background(Color.Black.copy(alpha = 0f), shape = CircleShape)
                 .size(24.dp)
         Spacer(Modifier.weight(2f))
         IconButton(modifier = modifier, onClick = {
@@ -438,7 +439,9 @@ fun VideoPreferencesBox(
                     CCSelectorDialogBox(
                         ccList = ccList!!,
                         currentSelectedCC = videoPlayerController.getCurrentCC(),
-                        onItemSelected = { videoPlayerController.setSpecificCC(it) },
+                        onItemSelected = {
+                            videoPlayerController.setSpecificCC(it)
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -597,7 +600,8 @@ fun AudioTrackSelectorBox(
             ) {
                 val textStyle =
                     if ((localSelectedAudioTrack?.index == item.index)
-                        && (localSelectedAudioTrack?.audioTrackGroupIndex == item.audioTrackGroupIndex))
+                        && (localSelectedAudioTrack?.audioTrackGroupIndex == item.audioTrackGroupIndex)
+                    )
                         TextStyle(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,

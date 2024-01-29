@@ -3,7 +3,6 @@ package com.github.nabin0.kmmvideoplayer.controller
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -37,7 +36,7 @@ actual class VideoPlayerController {
 
     private var exoPlayer: ExoPlayer? = null
     private var currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
-    private var currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = null)
+    private var currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = "Off")
     private var currentSelectedAudioTrack: AudioTrack? = null
 
     private var audioTrackGroup: Any? = null
@@ -77,9 +76,7 @@ actual class VideoPlayerController {
                         listOfCC.value = null
                         listOfAudioFormats.value = null
 
-                        currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
-                        currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = null)
-                        currentSelectedAudioTrack = null
+
                         trackGroupsList = tracks.groups
 
                         getAvailableVideoResolutions(tracks)
@@ -122,6 +119,10 @@ actual class VideoPlayerController {
                                 isBuffering.value = false
                                 exoPlayer?.prepare()
                             }
+
+                            Player.STATE_ENDED -> {
+
+                            }
                         }
 
                     }
@@ -131,12 +132,18 @@ actual class VideoPlayerController {
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
-                        Log.d("TAG", "onPlayerError: ${error.message}")
                     }
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         super.onIsPlayingChanged(isPlaying)
                         this@VideoPlayerController.isPlaying.value = isPlaying
+                    }
+
+                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                        super.onMediaItemTransition(mediaItem, reason)
+                        currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
+                        currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = null)
+                        currentSelectedAudioTrack = null
                     }
                 }
             )
@@ -148,7 +155,7 @@ actual class VideoPlayerController {
     }
 
 
-    private fun getAvailableVideoResolutions(tracks: Tracks){
+    private fun getAvailableVideoResolutions(tracks: Tracks) {
         try {
             // GET AVAILABLE VIDEO RESOLUTIONS
             val videoResolutions: MutableList<VideoQuality> = mutableListOf()
@@ -166,13 +173,6 @@ actual class VideoPlayerController {
                         val trackIndex = i
                         val trackName = "${trackFormat.height} p"
                         val resolutionKey = trackFormat.height
-                        if ((isSelected && currentSelectedVideoQuality.index != -1)) {
-                            currentSelectedVideoQuality = VideoQuality(
-                                trackIndex,
-                                trackName,
-                                resolutionKey
-                            )
-                        }
                         if (trackGroup.length == 1)
                             currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
                         videoResolutions.add(
@@ -197,19 +197,19 @@ actual class VideoPlayerController {
                 }
             }
 
-        }catch (e: Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun getAvailableSubtitleTracks(tracks: Tracks){
+    private fun getAvailableSubtitleTracks(tracks: Tracks) {
         try {
             val subtitlesList = mutableStateListOf<ClosedCaptionForTrackSelector>()
             subtitlesList.add(
                 ClosedCaptionForTrackSelector(
                     -1,
                     "Off",
-                    name = null
+                    name = "Off"
                 )
             )
             for (trackGroupIndex in 0 until tracks.groups.size) {
@@ -245,12 +245,13 @@ actual class VideoPlayerController {
             else
                 listOfCC.value = subtitlesList
 
-        }catch (e:Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    @OptIn(UnstableApi::class) private fun getAvailableAudioTracks(tracks: Tracks){
+    @OptIn(UnstableApi::class)
+    private fun getAvailableAudioTracks(tracks: Tracks) {
         try {
             val audioTracks: MutableList<AudioTrack> = mutableListOf()
             for (trackGroupIndex in 0 until tracks.groups.size) {
@@ -278,6 +279,7 @@ actual class VideoPlayerController {
                                     audioTrackGroupIndex = i
                                 )
                             }
+
                             audioTracks.add(
                                 AudioTrack(
                                     index = trackGroupIndex,
@@ -295,11 +297,10 @@ actual class VideoPlayerController {
 
             listOfAudioFormats.value = audioTracks
 
-        }catch (e:Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
-
 
 
     actual fun prepare() {
@@ -357,6 +358,17 @@ actual class VideoPlayerController {
                 else -> {}
             }
 
+            // if (isDRMEnabled) {
+            val drmUuid = C.WIDEVINE_UUID
+            val requestHeaders = mapOf("X-AxDRM-Message" to videoItem.licenseToken.toString())
+            val drmConfiguration = DrmConfiguration.Builder(drmUuid)
+                .setLicenseRequestHeaders(requestHeaders)
+                .setLicenseUri(videoItem.licenseUrl)
+                .build()
+            mediaItemBuilder.setDrmConfiguration(drmConfiguration)
+            // }
+
+            mediaItemBuilder.setDrmConfiguration(drmConfiguration)
             mediaItem = if (videoItem.listOfClosedCaptions != null) {
                 val listOfSubtitleConfiguration = mutableListOf<MediaItem.SubtitleConfiguration>()
 
@@ -512,18 +524,15 @@ actual class VideoPlayerController {
     @OptIn(UnstableApi::class)
     actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
         try {
-            val trackGroupTemp = trackGroupsList?.get(cc.index) ?: textTrackGroup
             currentSelectedCC = cc
-
+            if (cc.index == -1) {
+                setCCEnabled(false)
+                return
+            }
+            val trackGroupTemp = trackGroupsList?.get(cc.index) ?: textTrackGroup
             exoPlayer?.let {
                 it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
                     .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false).build()
-                if (cc.index == -1) {
-                    it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
-                        .clearOverride((trackGroupTemp as Tracks.Group).mediaTrackGroup).build()
-                    setCCEnabled(false)
-                    return
-                }
                 it.trackSelectionParameters =
                     it.trackSelectionParameters
                         .buildUpon()
@@ -543,10 +552,8 @@ actual class VideoPlayerController {
 
     actual fun setCCEnabled(enabled: Boolean) {
         exoPlayer?.let {
-            if (!enabled) {
-                it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
-                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true).build()
-            }
+            it.trackSelectionParameters = it.trackSelectionParameters.buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !enabled).build()
         }
     }
 

@@ -3,14 +3,10 @@ package com.github.nabin0.kmmvideoplayer.view
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,20 +29,25 @@ fun VideoPlayer(
     videoItem: VideoItem?,
     videoPlayerController: VideoPlayerController,
     listOfVideoUrls: List<VideoItem>?,
+    startPlayMuted: Boolean = false,
+    setCCEnabled:Boolean = false,
+
 ) {
     val rememberedPlayerController = remember { videoPlayerController }
     var isControllerCreated by rememberSaveable { mutableStateOf(false) }
     if (!isControllerCreated) {
         rememberedPlayerController.BuildPlayer { }
-        videoItem?.let { url ->
-            print("videoitem ${videoItem.videoUrl}")
-            rememberedPlayerController.setMediaItem(videoItem)
+        videoItem?.let {
+            rememberedPlayerController.setMediaItem(it)
         }
         listOfVideoUrls?.let {
             rememberedPlayerController.setPlayList(it)
         }
+        if(startPlayMuted){
+            rememberedPlayerController.setVolumeLevel(0F)
+        }
         rememberedPlayerController.prepare()
-        rememberedPlayerController.setCCEnabled(true)
+        rememberedPlayerController.setCCEnabled(setCCEnabled)
         rememberedPlayerController.playWhenReady(true)
         rememberedPlayerController.HandleActivityLifecycleStageChanges()
         isControllerCreated = true

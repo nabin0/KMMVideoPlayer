@@ -6,4 +6,7 @@ data class VideoItem(
     val videoDescription: String? = "Unknown",
     val licenseUrl: String? = null,
     val listOfClosedCaptions: List<ClosedCaption>? = null,
+    val isDrmEnabled:Boolean?,
+    val licenseToken: String?,
+    val certificateUrl: String?
 )
