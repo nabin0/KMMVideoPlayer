@@ -15,5 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "KMMVideoPlayer"
-include(":androidApp")
-include(":shared")
+include(":sharedVideoPlayer")
