@@ -1,0 +1,722 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <title>Coverage Report > VideoPlayerController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.github.nabin0.kmmvideoplayer.controller</a>
+</div>
+
+<h1>Coverage Summary for Class: VideoPlayerController (com.github.nabin0.kmmvideoplayer.controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">VideoPlayerController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    18.9%
+  </span>
+  <span class="absValue">
+    (7/37)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    5.9%
+  </span>
+  <span class="absValue">
+    (16/271)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.github.nabin0.kmmvideoplayer.controller
+&nbsp;
+&nbsp;import androidx.compose.foundation.background
+&nbsp;import androidx.compose.runtime.Composable
+&nbsp;import androidx.compose.runtime.remember
+&nbsp;import androidx.compose.ui.Modifier
+&nbsp;import androidx.compose.ui.graphics.Color
+&nbsp;import androidx.compose.ui.interop.UIKitView
+&nbsp;import com.github.nabin0.kmmvideoplayer.data.AudioTrack
+&nbsp;import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
+&nbsp;import com.github.nabin0.kmmvideoplayer.data.VideoItem
+&nbsp;import com.github.nabin0.kmmvideoplayer.data.VideoQuality
+&nbsp;import com.kmmvideoplayer.ObserverProtocol
+&nbsp;import kotlinx.cinterop.COpaquePointer
+&nbsp;import kotlinx.cinterop.CValue
+&nbsp;import kotlinx.cinterop.ExperimentalForeignApi
+&nbsp;import kotlinx.cinterop.cValue
+&nbsp;import kotlinx.coroutines.flow.MutableStateFlow
+&nbsp;import platform.AVFoundation.AVLayerVideoGravityResizeAspectFill
+&nbsp;import platform.AVFoundation.AVMediaCharacteristicAudible
+&nbsp;import platform.AVFoundation.AVMediaCharacteristicLegible
+&nbsp;import platform.AVFoundation.AVMediaSelectionGroup
+&nbsp;import platform.AVFoundation.AVMediaSelectionOption
+&nbsp;import platform.AVFoundation.AVPlayer
+&nbsp;import platform.AVFoundation.AVPlayerItem
+&nbsp;import platform.AVFoundation.AVPlayerLayer
+<b class="nc">&nbsp;import platform.AVFoundation.AVPlayerTimeControlStatusPlaying</b>
+&nbsp;import platform.AVFoundation.addPeriodicTimeObserverForInterval
+&nbsp;import platform.AVFoundation.asset
+&nbsp;import platform.AVFoundation.closedCaptionDisplayEnabled
+&nbsp;import platform.AVFoundation.currentItem
+&nbsp;import platform.AVFoundation.currentTime
+&nbsp;import platform.AVFoundation.duration
+&nbsp;import platform.AVFoundation.isPlaybackLikelyToKeepUp
+<b class="fc">&nbsp;import platform.AVFoundation.mediaSelectionGroupForMediaCharacteristic</b>
+&nbsp;import platform.AVFoundation.mediaSelectionOptionsFromArray
+&nbsp;import platform.AVFoundation.pause
+<b class="fc">&nbsp;import platform.AVFoundation.play</b>
+<b class="fc">&nbsp;import platform.AVFoundation.playImmediatelyAtRate</b>
+&nbsp;import platform.AVFoundation.preferredPeakBitRate
+&nbsp;import platform.AVFoundation.removeTimeObserver
+&nbsp;import platform.AVFoundation.replaceCurrentItemWithPlayerItem
+&nbsp;import platform.AVFoundation.seekToTime
+&nbsp;import platform.AVFoundation.selectMediaOption
+&nbsp;import platform.AVFoundation.setDefaultRate
+&nbsp;import platform.AVFoundation.setPreferredMaximumResolution
+&nbsp;import platform.AVFoundation.setRate
+<b class="nc">&nbsp;import platform.AVFoundation.setVolume</b>
+<b class="fc">&nbsp;import platform.AVFoundation.timeControlStatus</b>
+<b class="fc">&nbsp;import platform.AVKit.AVPlayerViewController</b>
+<b class="nc">&nbsp;import platform.CoreGraphics.CGRect</b>
+<b class="fc">&nbsp;import platform.CoreGraphics.CGRectMake</b>
+&nbsp;import platform.CoreGraphics.CGSize
+<b class="fc">&nbsp;import platform.CoreGraphics.CGSizeMake</b>
+&nbsp;import platform.CoreMedia.CMTime
+<b class="nc">&nbsp;import platform.CoreMedia.CMTimeGetSeconds</b>
+<b class="fc">&nbsp;import platform.CoreMedia.CMTimeMakeWithSeconds</b>
+&nbsp;import platform.Foundation.NSLocale
+<b class="nc">&nbsp;import platform.Foundation.NSURL</b>
+<b class="fc">&nbsp;import platform.QuartzCore.CATransaction</b>
+&nbsp;import platform.QuartzCore.kCATransactionDisableActions
+<b class="fc">&nbsp;import platform.UIKit.UIApplication</b>
+&nbsp;import platform.UIKit.UIInterfaceOrientationMask
+<b class="fc">&nbsp;import platform.UIKit.UIInterfaceOrientationMaskLandscapeRight</b>
+&nbsp;import platform.UIKit.UIInterfaceOrientationMaskPortrait
+&nbsp;import platform.UIKit.UIScreen
+<b class="nc">&nbsp;import platform.UIKit.UIView</b>
+<b class="nc">&nbsp;import platform.UIKit.UIWindowScene</b>
+<b class="nc">&nbsp;import platform.UIKit.UIWindowSceneGeometryPreferencesIOS</b>
+<b class="nc">&nbsp;import platform.darwin.NSEC_PER_SEC</b>
+<b class="nc">&nbsp;import platform.darwin.NSObject</b>
+&nbsp;
+&nbsp;actual class VideoPlayerController {
+&nbsp;    private var avPlayer: AVPlayer? = null
+&nbsp;
+&nbsp;    private var playWhenReady: Boolean? = null
+&nbsp;    private val videoList: MutableList&lt;VideoItem&gt; = mutableListOf()
+&nbsp;    private var currentVideoItemIndex: Int? = null
+&nbsp;    private var currentVideoItem: AVPlayerItem? = null
+&nbsp;    private lateinit var timeObserver: Any
+&nbsp;
+&nbsp;    private var currentSelectedVideoQuality =
+&nbsp;        VideoQuality(index = -1, value = &quot;Auto&quot;, resolutionKey = -1, height = null, width = null)
+&nbsp;
+&nbsp;    private var currentSelectedCC: ClosedCaptionForTrackSelector = ClosedCaptionForTrackSelector(
+&nbsp;        index = -1,
+&nbsp;        language = &quot;Off&quot;,
+&nbsp;        name = null
+&nbsp;    )
+&nbsp;
+&nbsp;    private var currentSelectedAudioTrack: AudioTrack? = null
+&nbsp;
+&nbsp;    actual val mediaDuration: MutableStateFlow&lt;Long&gt; = MutableStateFlow(1L)
+&nbsp;    actual val isPlaying: MutableStateFlow&lt;Boolean&gt; = MutableStateFlow(false)
+&nbsp;    actual val isBuffering: MutableStateFlow&lt;Boolean&gt; = MutableStateFlow(false)
+&nbsp;    actual val listOfVideoResolutions: MutableStateFlow&lt;List&lt;VideoQuality&gt;?&gt; =
+&nbsp;        MutableStateFlow(null)
+&nbsp;    actual val listOfAudioFormats: MutableStateFlow&lt;List&lt;AudioTrack&gt;?&gt; = MutableStateFlow(null)
+&nbsp;    actual val listOfCC: MutableStateFlow&lt;List&lt;ClosedCaptionForTrackSelector&gt;?&gt; =
+&nbsp;        MutableStateFlow(null)
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;    @OptIn(ExperimentalForeignApi::class)
+&nbsp;    private val observer: (CValue&lt;CMTime&gt;) -&gt; Unit = { time: CValue&lt;CMTime&gt; -&gt;
+&nbsp;        isBuffering.value = avPlayer?.currentItem?.isPlaybackLikelyToKeepUp() != true
+&nbsp;        isPlaying.value = avPlayer?.timeControlStatus == AVPlayerTimeControlStatusPlaying
+&nbsp;        /*
+&nbsp;        val rawTime: Float64 = CMTimeGetSeconds(time)
+&nbsp;         val parsedTime = rawTime.toDuration(DurationUnit.SECONDS).inWholeSeconds
+&nbsp;          currentTime = parsedTime
+&nbsp;          if (avPlayer?.currentItem != null) {
+&nbsp;              val cmTime = CMTimeGetSeconds(avPlayer.currentItem!!.duration)
+&nbsp;              duration = if (cmTime.isNaN()) 0 else cmTime.toDuration(DurationUnit.SECONDS).inWholeSeconds
+&nbsp;          }
+&nbsp;         */
+&nbsp;    }
+&nbsp;
+&nbsp;    init {
+&nbsp;        setVideoQualityOptions()
+&nbsp;    }
+&nbsp;
+&nbsp;    @Composable
+&nbsp;    actual fun BuildPlayer(onPlayerCreated: (player: Any) -&gt; Unit) {
+&nbsp;        avPlayer = remember { AVPlayer() }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @OptIn(ExperimentalForeignApi::class)
+&nbsp;    private fun startTimeObserver() {
+&nbsp;        val interval = CMTimeMakeWithSeconds(1.0, NSEC_PER_SEC.toInt())
+&nbsp;        timeObserver = avPlayer?.addPeriodicTimeObserverForInterval(interval, null, observer)!!
+&nbsp;//        NSNotificationCenter.defaultCenter.addObserverForName(
+&nbsp;//            name = AVPlayerItemDidPlayToEndTimeNotification,
+&nbsp;//            `object` = avPlayer?.currentItem,
+&nbsp;//            queue = NSOperationQueue.mainQueue,
+&nbsp;//            usingBlock = {
+&nbsp;//                // next()
+&nbsp;//            }
+&nbsp;//        )
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @OptIn(ExperimentalForeignApi::class)
+&nbsp;    fun observeTimeControlStatus(player: AVPlayer, onChange: (Int) -&gt; Unit) {
+&nbsp;//        val valobserverContext = nativeHeap.alloc&lt;COpaquePointerVar&gt;().apply {
+&nbsp;//            this.value = nativeHeap.alloc()
+&nbsp;//        }
+&nbsp;//        val observerContext = nativeHeap.alloc&lt;COpaquePointerVar&gt;()
+&nbsp;
+<b class="nc">&nbsp;//        player.observe(&quot;timeControlStatus&quot;, NSKeyValueObservingOptions(NSKeyValueObservingOptionNew), observerContext) { _, _, change -&gt;</b>
+<b class="nc">&nbsp;//            val newValue = change?.get(NSKeyValueChangeNewKey) as? Int</b>
+<b class="nc">&nbsp;//            if (newValue != null) {</b>
+&nbsp;//                onChange(newValue)
+<b class="nc">&nbsp;//            }</b>
+&nbsp;//        }
+&nbsp;
+&nbsp;        // You can return the observerContext if you need it for further cleanup
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+&nbsp;    @OptIn(ExperimentalForeignApi::class)
+<b class="nc">&nbsp;    @Composable</b>
+<b class="nc">&nbsp;    actual fun PlayerView(</b>
+&nbsp;        useDefaultController: Boolean,
+<b class="nc">&nbsp;        modifier: Modifier</b>
+<b class="nc">&nbsp;    ) {</b>
+<b class="nc">&nbsp;        val playerLayer = remember { AVPlayerLayer() }</b>
+&nbsp;        var avPlayerViewController = remember { AVPlayerViewController() }
+<b class="nc">&nbsp;        avPlayerViewController.player = avPlayer</b>
+<b class="nc">&nbsp;        avPlayerViewController.showsPlaybackControls = false</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        startTimeObserver()</b>
+<b class="nc">&nbsp;        playerLayer.setVideoGravity(AVLayerVideoGravityResizeAspectFill)</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        isPlaying.value = (avPlayer?.timeControlStatus() == AVPlayerTimeControlStatusPlaying)</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        playerLayer.player = avPlayer</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        val a = UIScreen.mainScreen.bounds</b>
+<b class="nc">&nbsp;        UIKitView(</b>
+<b class="nc">&nbsp;            interactive = true,</b>
+<b class="nc">&nbsp;            modifier = modifier.background(</b>
+<b class="nc">&nbsp;                Color.Red</b>
+&nbsp;            ),
+&nbsp;            factory = {
+&nbsp;                val playerContainer = UIView()
+&nbsp;                playerContainer.setFrame(CGRectMake(0.0, 0.0, 10.0, 10.0))
+<b class="nc">&nbsp;                playerContainer.addSubview(avPlayerViewController.view)</b>
+<b class="nc">&nbsp;                if (playWhenReady != null &amp;&amp; playWhenReady == true) {</b>
+<b class="nc">&nbsp;                    avPlayer?.play()</b>
+<b class="nc">&nbsp;                    avPlayerViewController.player!!.play()</b>
+<b class="nc">&nbsp;                }</b>
+<b class="nc">&nbsp;                avPlayer?.closedCaptionDisplayEnabled = false</b>
+<b class="nc">&nbsp;                isBuffering.value = true</b>
+&nbsp;                playerContainer.setFrame(UIScreen.mainScreen.bounds)
+<b class="nc">&nbsp;</b>
+&nbsp;                playerContainer
+&nbsp;            },
+&nbsp;            onResize = { view: UIView, rect: CValue&lt;CGRect&gt; -&gt;
+&nbsp;                CATransaction.begin()
+<b class="nc">&nbsp;                CATransaction.setValue(true, kCATransactionDisableActions)</b>
+<b class="nc">&nbsp;                view.layer.setFrame(rect)</b>
+&nbsp;                playerLayer.setFrame(rect)
+&nbsp;                avPlayerViewController.view.layer.frame = rect
+&nbsp;                CATransaction.commit()
+&nbsp;            },
+<b class="nc">&nbsp;            update = { view -&gt;</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;            }</b>
+<b class="nc">&nbsp;        )</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    }</b>
+&nbsp;
+&nbsp;    @Composable
+<b class="nc">&nbsp;    actual fun EnablePortraitScreenMode() {</b>
+<b class="nc">&nbsp;        setRequestOrientationChange(UIInterfaceOrientationMaskPortrait)</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    @Composable</b>
+<b class="nc">&nbsp;    actual fun EnableLandscapeScreenMode() {</b>
+<b class="nc">&nbsp;        setRequestOrientationChange(UIInterfaceOrientationMaskLandscapeRight)</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    private fun setRequestOrientationChange(orientation: UIInterfaceOrientationMask) {</b>
+<b class="nc">&nbsp;        val scenes = UIApplication.sharedApplication.connectedScenes.first() as UIWindowScene</b>
+<b class="nc">&nbsp;        scenes.requestGeometryUpdateWithPreferences(</b>
+<b class="nc">&nbsp;            UIWindowSceneGeometryPreferencesIOS(</b>
+&nbsp;                orientation
+&nbsp;            )
+&nbsp;        ) {
+<b class="nc">&nbsp;            println(&quot;error for orientation change request $it&quot;)</b>
+<b class="nc">&nbsp;        }</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    @Composable</b>
+&nbsp;    actual fun HandleActivityLifecycleStageChanges() {
+&nbsp;    }
+&nbsp;
+&nbsp;    actual fun setMediaItem(videoItem: VideoItem) {
+&nbsp;        val url = videoItem.videoUrl
+<b class="nc">&nbsp;        val avPlayerItem = AVPlayerItem(uRL = NSURL.URLWithString(url)!!)</b>
+<b class="nc">&nbsp;        currentVideoItem = avPlayerItem</b>
+&nbsp;        avPlayer?.replaceCurrentItemWithPlayerItem(currentVideoItem)
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+&nbsp;    actual fun prepare() {
+<b class="nc">&nbsp;    }</b>
+&nbsp;
+<b class="nc">&nbsp;    actual fun play() {</b>
+<b class="nc">&nbsp;        //isPlaying.value = true</b>
+&nbsp;        isBuffering.value = true
+&nbsp;        avPlayer?.play()
+&nbsp;    }
+&nbsp;
+&nbsp;    actual fun pause() {
+<b class="nc">&nbsp;        // isPlaying.value = false</b>
+<b class="nc">&nbsp;        avPlayer?.pause()</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    @OptIn(ExperimentalForeignApi::class)</b>
+<b class="nc">&nbsp;    actual fun seekTo(millis: Long) {</b>
+<b class="nc">&nbsp;        isBuffering.value = true</b>
+<b class="nc">&nbsp;        val millsToSeconds = (millis / 1000).toDouble()</b>
+<b class="nc">&nbsp;        avPlayer?.seekToTime(CMTimeMakeWithSeconds(millsToSeconds, NSEC_PER_SEC.toInt())) {</b>
+<b class="nc">&nbsp;            isBuffering.value = false</b>
+<b class="nc">&nbsp;        }</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    @OptIn(ExperimentalForeignApi::class)</b>
+<b class="nc">&nbsp;    actual fun currentPosition(): Long {</b>
+&nbsp;        val defaultCMTime = cValue&lt;CMTime&gt;()
+<b class="nc">&nbsp;        val currentTime = avPlayer?.currentTime() ?: defaultCMTime</b>
+<b class="nc">&nbsp;        val currentTimInMillis = CMTimeGetSeconds(currentTime) * 1000</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        // TODO: put this in time interval listener</b>
+<b class="nc">&nbsp;        val durationInMillis =</b>
+<b class="nc">&nbsp;            CMTimeGetSeconds(avPlayer?.currentItem?.duration() ?: defaultCMTime) * 1000</b>
+<b class="nc">&nbsp;        mediaDuration.value = durationInMillis.toLong()</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        //print(&quot;currentTime $currentTimInMillis duration $durationInMillis \n&quot;)</b>
+&nbsp;        isPlaying.value = (avPlayer?.timeControlStatus() == AVPlayerTimeControlStatusPlaying)
+&nbsp;        // println(&quot;is playing${isPlaying.value}&quot;)
+&nbsp;
+<b class="nc">&nbsp;        return currentTimInMillis.toLong()</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    actual fun releasePlayer() {</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+&nbsp;    actual fun stop() {
+&nbsp;        if (::timeObserver.isInitialized) avPlayer?.removeTimeObserver(timeObserver)
+&nbsp;        avPlayer?.replaceCurrentItemWithPlayerItem(null)
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    actual fun playWhenReady(boolean: Boolean) {
+<b class="nc">&nbsp;        playWhenReady = boolean</b>
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    actual fun addPlayList(listOfVideos: List&lt;VideoItem&gt;) {</b>
+&nbsp;        videoList.addAll(listOfVideos)
+&nbsp;    }
+&nbsp;
+&nbsp;    actual fun setPlayList(listOfVideos: List&lt;VideoItem&gt;) {
+&nbsp;        videoList.removeAll(videoList)
+<b class="fc">&nbsp;        videoList.addAll(listOfVideos)</b>
+&nbsp;
+&nbsp;
+&nbsp;        // TODO: add separate fun to play media by index
+<b class="fc">&nbsp;        if (videoList.isNotEmpty()) {</b>
+&nbsp;            replacePlayerItemWithNewItem(videoList[0])
+&nbsp;            currentVideoItemIndex = 0
+&nbsp;        }
+<b class="fc">&nbsp;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+<b class="fc">&nbsp;    actual fun playNextFromPlaylist() {</b>
+&nbsp;        currentVideoItemIndex?.let {
+&nbsp;            if (it &lt; videoList.size - 1) {
+&nbsp;                val nextVideoIndex = it + 1
+&nbsp;                currentVideoItemIndex = nextVideoIndex
+&nbsp;                replacePlayerItemWithNewItem(videoList[nextVideoIndex])
+<b class="nc">&nbsp;            }</b>
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    actual fun playPreviousFromPlaylist() {
+&nbsp;        currentVideoItemIndex?.let {
+&nbsp;            if (it &gt; 0) {
+<b class="nc">&nbsp;                val nextVideoIndex = it - 1</b>
+<b class="nc">&nbsp;                currentVideoItemIndex = nextVideoIndex</b>
+<b class="nc">&nbsp;                replacePlayerItemWithNewItem(videoList[nextVideoIndex])</b>
+<b class="nc">&nbsp;            }</b>
+<b class="nc">&nbsp;        }</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    private fun replacePlayerItemWithNewItem(videoItem: VideoItem) {</b>
+&nbsp;        isBuffering.value = true
+<b class="nc">&nbsp;        val url = videoItem.videoUrl</b>
+<b class="nc">&nbsp;        val avPlayerItem = AVPlayerItem(uRL = NSURL.URLWithString(url)!!)</b>
+<b class="nc">&nbsp;        currentVideoItem = avPlayerItem</b>
+<b class="nc">&nbsp;        avPlayer?.replaceCurrentItemWithPlayerItem(avPlayerItem)</b>
+&nbsp;        currentSelectedCC = ClosedCaptionForTrackSelector(
+<b class="nc">&nbsp;            index = -1,</b>
+<b class="nc">&nbsp;            language = &quot;Off&quot;,</b>
+<b class="nc">&nbsp;            name = null</b>
+<b class="nc">&nbsp;        )</b>
+<b class="nc">&nbsp;        getAvailableSubtitleAndAudioTracks(videoItem)</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    private fun getAvailableSubtitleAndAudioTracks(videoItem: VideoItem) {
+<b class="nc">&nbsp;        val mediaSelectionGroupCC: AVMediaSelectionGroup?</b>
+<b class="nc">&nbsp;        val ccOptions: List&lt;*&gt;?</b>
+&nbsp;        try {
+&nbsp;            val hlsAsset = currentVideoItem?.asset
+&nbsp;            val mediaCharacteristicCC = AVMediaCharacteristicLegible
+&nbsp;            mediaSelectionGroupCC =
+<b class="nc">&nbsp;                hlsAsset?.mediaSelectionGroupForMediaCharacteristic(mediaCharacteristicCC)</b>
+<b class="nc">&nbsp;            ccOptions = mediaSelectionGroupCC?.options</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;            val ccSelectorList = mutableListOf&lt;ClosedCaptionForTrackSelector&gt;()</b>
+<b class="nc">&nbsp;            ccSelectorList.add(</b>
+<b class="nc">&nbsp;                ClosedCaptionForTrackSelector(</b>
+<b class="nc">&nbsp;                    index = -1,</b>
+&nbsp;                    language = &quot;Off&quot;,
+&nbsp;                    name = null
+<b class="nc">&nbsp;                )</b>
+<b class="nc">&nbsp;            )</b>
+<b class="nc">&nbsp;            if (ccOptions != null) {</b>
+&nbsp;                for (i in ccOptions.indices) {
+<b class="nc">&nbsp;                    val option = ccOptions[i] as AVMediaSelectionOption</b>
+<b class="nc">&nbsp;                    if (option.mediaType == &quot;sbtl&quot;) {</b>
+<b class="nc">&nbsp;                        if (!option.extendedLanguageTag.isNullOrBlank()) {</b>
+<b class="nc">&nbsp;                            ccSelectorList.add(</b>
+<b class="nc">&nbsp;                                ClosedCaptionForTrackSelector(</b>
+<b class="nc">&nbsp;                                    index = i,</b>
+<b class="nc">&nbsp;                                    language = option.extendedLanguageTag!!,</b>
+&nbsp;                                    name = option.displayName
+&nbsp;                                )
+<b class="nc">&nbsp;                            )</b>
+<b class="nc">&nbsp;                        }</b>
+<b class="nc">&nbsp;                    }</b>
+&nbsp;                }
+<b class="nc">&nbsp;                listOfCC.value = ccSelectorList</b>
+<b class="nc">&nbsp;            }</b>
+<b class="nc">&nbsp;</b>
+&nbsp;            val audioSelectorList = mutableListOf&lt;AudioTrack&gt;()
+&nbsp;            val mediaCharacteristicAudio = AVMediaCharacteristicAudible
+<b class="nc">&nbsp;            val mediaSelectionGroup =</b>
+<b class="nc">&nbsp;                hlsAsset?.mediaSelectionGroupForMediaCharacteristic(mediaCharacteristicAudio)</b>
+&nbsp;            val audioTrackOptions = mediaSelectionGroup?.options
+&nbsp;            val defaultAudioTrack = mediaSelectionGroup?.defaultOption
+&nbsp;            if (audioTrackOptions != null) {
+&nbsp;                for (i in audioTrackOptions.indices) {
+<b class="nc">&nbsp;                    val option = audioTrackOptions[i] as AVMediaSelectionOption</b>
+<b class="nc">&nbsp;                    option.extendedLanguageTag?.let {</b>
+&nbsp;                        val audioTrack = AudioTrack(
+&nbsp;                            index = i,
+&nbsp;                            language = it,
+&nbsp;                            name = it,
+&nbsp;                            audioTrackGroupIndex = i,
+&nbsp;                            isStereo = true
+&nbsp;                        )
+&nbsp;                        if (it == defaultAudioTrack?.extendedLanguageTag) {
+&nbsp;                            currentSelectedAudioTrack = audioTrack
+&nbsp;                        }
+&nbsp;                        audioSelectorList.add(
+&nbsp;                            audioTrack
+&nbsp;                        )
+&nbsp;                    }
+<b class="nc">&nbsp;                }</b>
+&nbsp;                listOfAudioFormats.value = audioSelectorList
+&nbsp;            }
+&nbsp;
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        } catch (e: Exception) {</b>
+<b class="nc">&nbsp;            e.printStackTrace()</b>
+<b class="nc">&nbsp;        }</b>
+<b class="nc">&nbsp;</b>
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    private var currentPlaybackSpeed = 1f</b>
+<b class="nc">&nbsp;    actual fun setPlaybackSpeed(selectedPlaybackSpeed: Float) {</b>
+&nbsp;        currentPlaybackSpeed = selectedPlaybackSpeed
+&nbsp;        avPlayer?.setDefaultRate(selectedPlaybackSpeed)
+<b class="nc">&nbsp;        // avPlayer?.rate = (selectedPlaybackSpeed)</b>
+<b class="nc">&nbsp;        avPlayer?.setRate(selectedPlaybackSpeed)</b>
+<b class="nc">&nbsp;        avPlayer?.playImmediatelyAtRate(selectedPlaybackSpeed)</b>
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+&nbsp;    actual fun getCurrentPlaybackSpeed(): Float {
+&nbsp;        return currentPlaybackSpeed
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+&nbsp;    actual fun getCurrentVideoStreamingQuality(): VideoQuality {
+&nbsp;        return currentSelectedVideoQuality
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+&nbsp;    @OptIn(ExperimentalForeignApi::class)
+&nbsp;    actual fun setSpecificVideoQuality(videoQuality: VideoQuality) {
+&nbsp;        //avPlayerItem.setPreferredPeakBitRate(1356000.0)
+<b class="nc">&nbsp;        getCzSizeFromVideoQuality(videoQuality)?.let {</b>
+<b class="nc">&nbsp;            currentVideoItem?.setPreferredMaximumResolution(it)</b>
+&nbsp;            currentSelectedVideoQuality = videoQuality
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @OptIn(ExperimentalForeignApi::class)
+&nbsp;    private fun getCzSizeFromVideoQuality(videoQuality: VideoQuality): CValue&lt;CGSize&gt;? {
+<b class="nc">&nbsp;        return if (videoQuality.width != null &amp;&amp; videoQuality.height != null)</b>
+&nbsp;            CGSizeMake(width = videoQuality.width * 1.0, videoQuality.height * 1.0)
+<b class="nc">&nbsp;        else {</b>
+<b class="nc">&nbsp;            currentVideoItem?.preferredPeakBitRate = 0.0</b>
+&nbsp;            currentSelectedVideoQuality = VideoQuality(
+&nbsp;                index = -1,
+<b class="nc">&nbsp;                value = &quot;Off&quot;,</b>
+<b class="nc">&nbsp;                resolutionKey = -1,</b>
+&nbsp;                height = null,
+&nbsp;                width = null
+&nbsp;            )
+<b class="nc">&nbsp;            null</b>
+&nbsp;        }
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+&nbsp;
+&nbsp;    actual fun setSpecificCC(cc: ClosedCaptionForTrackSelector) {
+<b class="nc">&nbsp;        try {</b>
+<b class="nc">&nbsp;            if (cc.index == -1) {</b>
+&nbsp;                setCCEnabled(false)
+&nbsp;                currentSelectedCC = cc
+&nbsp;                return
+<b class="nc">&nbsp;            }</b>
+<b class="nc">&nbsp;            setCCEnabled(true)</b>
+<b class="nc">&nbsp;</b>
+&nbsp;            val currentVideoAsset = currentVideoItem?.asset
+&nbsp;            setCCEnabled(true)
+&nbsp;
+&nbsp;            val group = currentVideoAsset?.mediaSelectionGroupForMediaCharacteristic(
+<b class="nc">&nbsp;                AVMediaCharacteristicLegible</b>
+<b class="nc">&nbsp;            )</b>
+<b class="nc">&nbsp;            val options = group?.options?.let {</b>
+&nbsp;                AVMediaSelectionGroup.mediaSelectionOptionsFromArray(
+&nbsp;                    mediaSelectionOptions = it,
+&nbsp;                    withLocale = NSLocale(cc.language)
+<b class="fc">&nbsp;                )</b>
+&nbsp;            }
+<b class="nc">&nbsp;            if (group != null) {</b>
+<b class="nc">&nbsp;                currentVideoItem?.selectMediaOption(</b>
+&nbsp;                    options?.get(0) as AVMediaSelectionOption?,
+&nbsp;                    group
+&nbsp;                )
+<b class="nc">&nbsp;                currentSelectedCC = cc</b>
+<b class="nc">&nbsp;            }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;        } catch (e: Exception) {</b>
+<b class="nc">&nbsp;            e.printStackTrace()</b>
+<b class="nc">&nbsp;        }</b>
+&nbsp;
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    actual fun getCurrentCC(): ClosedCaptionForTrackSelector {</b>
+<b class="nc">&nbsp;        return currentSelectedCC</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    actual fun setCCEnabled(enabled: Boolean) {</b>
+<b class="nc">&nbsp;        avPlayer?.closedCaptionDisplayEnabled = enabled</b>
+&nbsp;    }
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    actual fun setVolumeLevel(volumeLevel: Float) {</b>
+<b class="nc">&nbsp;        avPlayer?.setVolume(volumeLevel)</b>
+<b class="nc">&nbsp;    }</b>
+&nbsp;
+&nbsp;
+&nbsp;    private fun setVideoQualityOptions() {
+&nbsp;        // Other Approach - getting value of available resolution from hls manifest
+&nbsp;        val videoQualitySelectorOptions = listOf(
+<b class="nc">&nbsp;            VideoQuality(</b>
+&nbsp;                index = -1,
+&nbsp;                value = &quot;Auto&quot;,
+&nbsp;                resolutionKey = -1,
+&nbsp;                width = null,
+<b class="nc">&nbsp;                height = null</b>
+<b class="nc">&nbsp;            ),</b>
+<b class="nc">&nbsp;            VideoQuality(</b>
+<b class="nc">&nbsp;                index = 0,</b>
+&nbsp;                value = &quot;144 p&quot;,
+&nbsp;                resolutionKey = -1,
+<b class="nc">&nbsp;                width = 144f,</b>
+<b class="nc">&nbsp;                height = 256f</b>
+<b class="nc">&nbsp;            ),</b>
+<b class="nc">&nbsp;            VideoQuality(</b>
+<b class="nc">&nbsp;                index = 1,</b>
+<b class="nc">&nbsp;                value = &quot;240 p&quot;,</b>
+<b class="nc">&nbsp;                resolutionKey = -1,</b>
+<b class="nc">&nbsp;                width = 240f,</b>
+<b class="nc">&nbsp;                height = 426f</b>
+<b class="nc">&nbsp;            ),</b>
+<b class="nc">&nbsp;            VideoQuality(</b>
+&nbsp;                index = 2,
+<b class="nc">&nbsp;                value = &quot;360 p&quot;,</b>
+<b class="nc">&nbsp;                resolutionKey = -1,</b>
+<b class="nc">&nbsp;                width = 360f,</b>
+<b class="nc">&nbsp;                height = 640f</b>
+&nbsp;            ),
+&nbsp;            VideoQuality(
+&nbsp;                index = 3,
+<b class="nc">&nbsp;                value = &quot;480 p&quot;,</b>
+&nbsp;                resolutionKey = -1,
+&nbsp;                width = 480f,
+<b class="nc">&nbsp;                height = 854f</b>
+<b class="nc">&nbsp;            ),</b>
+<b class="nc">&nbsp;            VideoQuality(</b>
+<b class="nc">&nbsp;                index = 4,</b>
+&nbsp;                value = &quot;720 p&quot;,
+&nbsp;                resolutionKey = -1,
+&nbsp;                width = 720f,
+<b class="nc">&nbsp;                height = 1280f</b>
+&nbsp;            ),
+&nbsp;            VideoQuality(
+&nbsp;                index = 5,
+<b class="nc">&nbsp;                value = &quot;1080 p&quot;,</b>
+<b class="nc">&nbsp;                resolutionKey = -1,</b>
+&nbsp;                width = 1080f,
+<b class="nc">&nbsp;                height = 1920f</b>
+<b class="nc">&nbsp;            ),</b>
+<b class="nc">&nbsp;        )</b>
+<b class="nc">&nbsp;        listOfVideoResolutions.value = videoQualitySelectorOptions</b>
+<b class="nc">&nbsp;    }</b>
+<b class="nc">&nbsp;</b>
+<b class="nc">&nbsp;    actual fun setSpecificAudioTrack(audioTrack: AudioTrack) {</b>
+<b class="nc">&nbsp;        try {</b>
+<b class="nc">&nbsp;            val currentVideoAsset = currentVideoItem?.asset</b>
+&nbsp;            val group = currentVideoAsset?.mediaSelectionGroupForMediaCharacteristic(
+<b class="nc">&nbsp;                AVMediaCharacteristicAudible</b>
+<b class="nc">&nbsp;            )</b>
+<b class="nc">&nbsp;            val options = group?.options?.let {</b>
+<b class="nc">&nbsp;                AVMediaSelectionGroup.mediaSelectionOptionsFromArray(</b>
+&nbsp;                    mediaSelectionOptions = it,
+&nbsp;                    withLocale = NSLocale(audioTrack.language)
+&nbsp;                )
+&nbsp;            }
+&nbsp;            if (group != null) {
+<b class="nc">&nbsp;                currentVideoItem?.selectMediaOption(</b>
+&nbsp;                    options?.get(0) as AVMediaSelectionOption?,
+&nbsp;                    group
+&nbsp;                )
+&nbsp;                currentSelectedAudioTrack = audioTrack
+&nbsp;            }
+&nbsp;        } catch (e: Exception) {
+&nbsp;            e.printStackTrace()
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    actual fun getCurrentSelectedAudioTrack(): AudioTrack? {
+&nbsp;        return currentSelectedAudioTrack
+&nbsp;    }
+&nbsp;
+&nbsp;}
+&nbsp;
+&nbsp;@OptIn(ExperimentalForeignApi::class)
+&nbsp;class VideoObserver : ObserverProtocol, NSObject() {
+&nbsp;    override fun observeValueForKeyPath(
+&nbsp;        keyPath: String?,
+&nbsp;        ofObject: Any?,
+&nbsp;        change: Map&lt;Any?, *&gt;?,
+&nbsp;        context: COpaquePointer?
+&nbsp;    ) {
+&nbsp;        println(&quot;keyPath $keyPath&quot;)
+&nbsp;        println(&quot;ofObject $ofObject&quot;)
+&nbsp;        println(&quot;change $change&quot;)
+&nbsp;        println(&quot;context $context&quot;)
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-01-29 15:46</div>
+</div>
+</body>
+</html>

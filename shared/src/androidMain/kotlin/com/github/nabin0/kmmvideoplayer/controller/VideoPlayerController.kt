@@ -45,7 +45,6 @@ actual class VideoPlayerController {
     private var trackGroupsList: List<Tracks.Group>? = null
 
 
-    actual fun getCurrentPlaybackSpeed(): Float = currentPlaybackSpeed
     actual val listOfVideoResolutions: MutableStateFlow<List<VideoQuality>?> =
         MutableStateFlow(null)
     actual val listOfAudioFormats: MutableStateFlow<List<AudioTrack>?> = MutableStateFlow(null)
@@ -61,6 +60,8 @@ actual class VideoPlayerController {
         MutableStateFlow(true)
 
     actual fun currentPosition(): Long = exoPlayer?.currentPosition ?: 0L
+
+    actual fun getCurrentPlaybackSpeed(): Float = currentPlaybackSpeed
 
     @Composable
     actual fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit) {
@@ -227,6 +228,7 @@ actual class VideoPlayerController {
                                 name = null
                             )
                         }
+
                         subtitlesList.add(
                             ClosedCaptionForTrackSelector(
                                 index = trackGroupIndex,

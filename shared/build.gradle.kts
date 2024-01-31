@@ -44,27 +44,27 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
-            @OptIn(ExperimentalComposeLibrary::class)
-            implementation(compose.components.resources)
-
+            api(compose.runtime)
+//            implementation ("androidx.compose.runtime:runtime:1.6.0")
+//            implementation(compose.foundation)
+            api(compose.material)
+            api(compose.materialIconsExtended)
+//            implementation(compose.ui)
+//            @OptIn(ExperimentalComposeLibrary::class)
+//            implementation(compose.components.resources)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         androidMain.dependencies {
-            implementation(libs.androidx.activity.compose)
+            api(libs.androidx.activity.compose)
 
-            implementation (libs.androidx.media3.exoplayer)
-            implementation (libs.androidx.media3.ui)
-            implementation (libs.androidx.media3.common)
-            implementation (libs.androidx.media3.exoplayer.hls)
-            implementation(libs.androidx.media3.exoplayer.dash)
-            implementation(libs.androidx.media3.datasource.cronet)
+            api (libs.androidx.media3.exoplayer)
+            api (libs.androidx.media3.ui)
+            api (libs.androidx.media3.common)
+            api (libs.androidx.media3.exoplayer.hls)
+            api(libs.androidx.media3.exoplayer.dash)
+            api(libs.androidx.media3.datasource.cronet)
         }
     }
 }
@@ -75,4 +75,8 @@ android {
     defaultConfig {
         minSdk = 24
     }
+}
+dependencies {
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.mockk)
 }
