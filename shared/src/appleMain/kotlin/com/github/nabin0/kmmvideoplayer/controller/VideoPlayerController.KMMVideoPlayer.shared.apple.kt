@@ -87,6 +87,7 @@ actual class VideoPlayerController {
         language = "Off",
         name = null
     )
+    actual val currentPlayingMediaIndex: MutableStateFlow<Int> = MutableStateFlow(-1)
 
     private var currentSelectedAudioTrack: AudioTrack? = null
 
@@ -304,7 +305,7 @@ actual class VideoPlayerController {
         videoList.addAll(listOfVideos)
     }
 
-    actual fun setPlayList(listOfVideos: List<VideoItem>) {
+    actual fun setPlayList(listOfVideos: List<VideoItem>, videoItemIndexInList: Int) {
         videoList.removeAll(videoList)
         videoList.addAll(listOfVideos)
 

@@ -29,10 +29,11 @@ fun VideoPlayer(
     videoItem: VideoItem?,
     videoPlayerController: VideoPlayerController,
     listOfVideoUrls: List<VideoItem>?,
+    currentVideoItemIndexInList: Int?,
     startPlayMuted: Boolean = false,
-    setCCEnabled:Boolean = false,
+    setCCEnabled: Boolean = false,
 
-) {
+    ) {
     val rememberedPlayerController = remember { videoPlayerController }
     var isControllerCreated by rememberSaveable { mutableStateOf(false) }
     if (!isControllerCreated) {
@@ -41,9 +42,9 @@ fun VideoPlayer(
             rememberedPlayerController.setMediaItem(it)
         }
         listOfVideoUrls?.let {
-            rememberedPlayerController.setPlayList(it)
+            rememberedPlayerController.setPlayList(it, currentVideoItemIndexInList ?: 0)
         }
-        if(startPlayMuted){
+        if (startPlayMuted) {
             rememberedPlayerController.setVolumeLevel(0F)
         }
         rememberedPlayerController.prepare()
