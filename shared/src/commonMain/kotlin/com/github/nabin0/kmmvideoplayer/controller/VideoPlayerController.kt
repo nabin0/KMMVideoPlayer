@@ -7,6 +7,7 @@ import com.github.nabin0.kmmvideoplayer.data.ClosedCaption
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
+import com.github.nabin0.kmmvideoplayer.listeners.PlayerEventListener
 import kotlinx.coroutines.flow.MutableStateFlow
 
 expect class VideoPlayerController {
@@ -20,6 +21,8 @@ expect class VideoPlayerController {
     val listOfCC: MutableStateFlow<List<ClosedCaptionForTrackSelector>?>
 
     val currentPlayingMediaIndex: MutableStateFlow<Int>
+
+    fun addListener(playerEventListener: PlayerEventListener)
 
     @Composable
     fun BuildPlayer(onPlayerCreated: (player: Any) -> Unit)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
+import com.github.nabin0.kmmvideoplayer.listeners.PlayerEventListener
 import com.github.nabin0.kmmvideoplayer.utils.noRippleClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
@@ -32,11 +34,16 @@ fun VideoPlayer(
     currentVideoItemIndexInList: Int?,
     startPlayMuted: Boolean = false,
     setCCEnabled: Boolean = false,
-
+playerEventListener: PlayerEventListener?
     ) {
     val rememberedPlayerController = remember { videoPlayerController }
+
+
     var isControllerCreated by rememberSaveable { mutableStateOf(false) }
     if (!isControllerCreated) {
+        if (playerEventListener != null) {
+            rememberedPlayerController.addListener(playerEventListener)
+        }
         rememberedPlayerController.BuildPlayer { }
         videoItem?.let {
             rememberedPlayerController.setMediaItem(it)
@@ -53,6 +60,8 @@ fun VideoPlayer(
         rememberedPlayerController.HandleActivityLifecycleStageChanges()
         isControllerCreated = true
     }
+
+
 
     VideoPlayerView(modifier = modifier, videoPlayerController = rememberedPlayerController)
 

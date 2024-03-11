@@ -3,6 +3,7 @@ package com.github.nabin0.kmmvideoplayer.android
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -17,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,9 +33,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.github.nabin0.kmmvideoplayer.android.Utils.listOfVideoUrls
+import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerController
 import com.github.nabin0.kmmvideoplayer.controller.VideoPlayerControllerFactory
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaption
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
+import com.github.nabin0.kmmvideoplayer.listeners.PlayerEventListener
 import com.github.nabin0.kmmvideoplayer.view.VideoPlayer
 
 class MainActivity : ComponentActivity() {
@@ -45,9 +51,10 @@ class MainActivity : ComponentActivity() {
                 Surface {
 
                     val a = rememberNavController()
-                    NavHost(navController = a, startDestination = "home"){
-                        composable(route = "home"){
-                            MainScreen()
+                    NavHost(navController = a, startDestination = "home") {
+                        composable(route = "home") {
+                            TestRecomposition()
+                             MainScreen()
 //                            Button(onClick = {
 //                                a.navigate("page1")
 //                            }) {
@@ -55,7 +62,7 @@ class MainActivity : ComponentActivity() {
 //                            }
                         }
 
-                        composable(route = "page1"){
+                        composable(route = "page1") {
                             MainScreen()
                         }
                     }
@@ -65,6 +72,82 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+@Composable
+fun TestRecomposition() {
+    Log.d("TAG", "TestRecomposition: called")
+
+    val player = U.playerControlelr
+
+    Log.d("TAG", "Player : $player ")
+
+    val currentIndex by player.currentPlayingMediaIndex.collectAsState()
+//    LaunchedEffect(key1 = currentIndex, block = {
+//        Log.d("TAG", "Launcheffect $currentIndex")
+//    })
+
+    val listOfVideos= remember {
+        listOfVideoUrls
+    }
+
+
+    comp1(listOfVideos)
+    Button(onClick = { player.playNextFromPlaylist() }) {
+        Text(text = "clickme")
+    }
+
+}
+
+@Composable
+fun comp1(listOfVideos: List<VideoItem>) {
+    Log.d("TAG", "comp1: called ${listOfVideos}")
+    Text(text = "hello compose")
+    VideoPlayer(
+        videoItem = null,
+        videoPlayerController = U.playerControlelr,
+        listOfVideoUrls = listOfVideos,
+        currentVideoItemIndexInList = 0,
+        playerEventListener = object : PlayerEventListener {
+            override fun onPlayNextMediaItemFromList(index: Int) {
+
+            }
+
+            override fun onPlayPreviousMediaItemFromList(index: Int) {
+
+            }
+
+
+        }
+    )
+}
+
+object U {
+    @Composable
+    fun GetPlayer(listOfVideos: List<VideoItem>, videoPlayerController: VideoPlayerController) {
+        Log.d("TAG", "GetPlayer: called")
+        VideoPlayer(
+            videoItem = null,
+            videoPlayerController = videoPlayerController,
+            listOfVideoUrls = listOfVideos,
+            currentVideoItemIndexInList = 0,
+            playerEventListener = object : PlayerEventListener {
+                override fun onPlayNextMediaItemFromList(index: Int) {
+
+                }
+
+                override fun onPlayPreviousMediaItemFromList(index: Int) {
+
+                }
+
+
+            }
+        )
+
+    }
+
+    val playerControlelr = VideoPlayerControllerFactory().createVideoPlayer()
+
+}
 
 @Composable
 fun MainScreen() {
@@ -81,7 +164,8 @@ fun MainScreen() {
             listOfVideoUrls = listOfVideoUrls,
             startPlayMuted = false,
             setCCEnabled = true,
-            currentVideoItemIndexInList = 1
+            currentVideoItemIndexInList = 1,
+            playerEventListener = null
         )
 
         Text(

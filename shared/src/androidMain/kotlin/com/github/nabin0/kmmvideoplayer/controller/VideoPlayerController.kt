@@ -31,9 +31,12 @@ import com.github.nabin0.kmmvideoplayer.data.AudioTrack
 import com.github.nabin0.kmmvideoplayer.data.ClosedCaptionForTrackSelector
 import com.github.nabin0.kmmvideoplayer.data.VideoItem
 import com.github.nabin0.kmmvideoplayer.data.VideoQuality
+import com.github.nabin0.kmmvideoplayer.listeners.PlayerEventListener
 import kotlinx.coroutines.flow.MutableStateFlow
 
 actual class VideoPlayerController {
+
+    private var playerEventListener: PlayerEventListener? = null
 
     private var exoPlayer: ExoPlayer? = null
     private var currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
@@ -99,7 +102,6 @@ actual class VideoPlayerController {
                     }
 
                     override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-                        Log.d("TAG", "metadata: called")
 
                     }
 
@@ -133,7 +135,6 @@ actual class VideoPlayerController {
                     }
 
                     override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                        Log.d("TAG", "onTimelineChanged: called")
                         super.onTimelineChanged(timeline, reason)
                     }
 
@@ -147,6 +148,7 @@ actual class VideoPlayerController {
 
                     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                         super.onMediaItemTransition(mediaItem, reason)
+                        playerEventListener?.onPlayNextMediaItemFromList(exoPlayer?.currentMediaItemIndex?:-1)
                         currentPlayingMediaIndex.value = exoPlayer?.currentMediaItemIndex ?: -1
                         currentSelectedVideoQuality = VideoQuality(-1, "Auto", -1)
                         currentSelectedCC = ClosedCaptionForTrackSelector(-1, "Off", name = null)
@@ -593,6 +595,10 @@ actual class VideoPlayerController {
 
     actual fun getCurrentSelectedAudioTrack(): AudioTrack? {
         return currentSelectedAudioTrack
+    }
+
+    actual fun addListener(playerEventListener: PlayerEventListener) {
+        this.playerEventListener = playerEventListener
     }
 
 }
